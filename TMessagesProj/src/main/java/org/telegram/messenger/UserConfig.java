@@ -577,6 +577,10 @@ public class UserConfig extends BaseController {
         if (user == null) {
             return false;
         }
+        if (org.telegram.utils.settings.SharedSettings.buttergramLocalPremium.get()) {
+            // ButterGram: client side only, the server still sees a regular account
+            return true;
+        }
         return user.premium;
     }
 

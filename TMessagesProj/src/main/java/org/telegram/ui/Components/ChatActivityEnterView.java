@@ -7407,6 +7407,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                     emojiView.hideSearchKeyboard();
                 }
             }
+            if (allowConfirmFinal && buttergramConfirmBeforeSend(() -> sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, true))) {
+                return;
+            }
             if (allowConfirmFinal && showConfirmAlert(() -> {
                 sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, false);
             })) {
@@ -7563,6 +7566,60 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     protected boolean showConfirmAlert(Runnable onConfirmed) {
         return false;
+    }
+
+    private boolean buttergramConfirmed;
+
+    /** ButterGram: shows "send anyway?" and returns true if the dialog was shown (the caller must stop). */
+    private boolean buttergramShowSendDialog(int messageRes, Runnable onConfirmed) {
+        if (messageRes == 0 || parentActivity == null) {
+            return false;
+        }
+        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(parentActivity, resourcesProvider);
+        builder.setTitle(LocaleController.getString(R.string.ButterGramConfirmTitle));
+        builder.setMessage(LocaleController.getString(messageRes));
+        builder.setPositiveButton(LocaleController.getString(R.string.Send), (dialog, which) -> onConfirmed.run());
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        builder.show();
+        return true;
+    }
+
+    /** Text with offensive words, a voice message or a round video that is about to be sent from the preview. */
+    private boolean buttergramConfirmBeforeSend(Runnable resend) {
+        if (buttergramConfirmed) {
+            buttergramConfirmed = false;
+            return false;
+        }
+        int res = 0;
+        if (videoToSendMessageObject != null) {
+            if (org.telegram.utils.settings.SharedSettings.buttergramConfirmRound.get()) {
+                res = R.string.ButterGramConfirmRound;
+            }
+        } else if (audioToSend != null) {
+            if (org.telegram.utils.settings.SharedSettings.buttergramConfirmVoice.get()) {
+                res = R.string.ButterGramConfirmVoice;
+            }
+        } else if (org.telegram.utils.settings.SharedSettings.buttergramWarnOffensive.get()
+                && messageEditText != null
+                && org.telegram.messenger.ButterGram.looksOffensive(messageEditText.getText())) {
+            res = R.string.ButterGramOffensiveWarning;
+        }
+        return buttergramShowSendDialog(res, () -> {
+            buttergramConfirmed = true;
+            resend.run();
+        });
+    }
+
+    /** Sticker: ask first when the setting is on, otherwise continue as usual. */
+    private boolean buttergramConfirmSticker(Runnable send) {
+        if (!org.telegram.utils.settings.SharedSettings.buttergramConfirmSticker.get()) {
+            return false;
+        }
+        return buttergramShowSendDialog(R.string.ButterGramConfirmSticker, () -> {
+            if (!showConfirmAlert(send)) {
+                send.run();
+            }
+        });
     }
 
     public static boolean checkPremiumAnimatedEmoji(int currentAccount, long dialogId, BaseFragment parentFragment, FrameLayout container, CharSequence message) {
@@ -12525,7 +12582,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                                 delegate.onMessageSend(null, notify, scheduleDate, 0, 0);
                             }
                         };
-                        if (!showConfirmAlert(runnable)) {
+                        if (!buttergramConfirmSticker(runnable) && !showConfirmAlert(runnable)) {
                             runnable.run();
                         }
                     });
@@ -12799,7 +12856,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                     }
                     MediaDataController.getInstance(currentAccount).addRecentSticker(MediaDataController.TYPE_IMAGE, parent, sticker, (int) (System.currentTimeMillis() / 1000), false);
                 };
-                if (!showConfirmAlert(runnable)) {
+                if (!buttergramConfirmSticker(runnable) && !showConfirmAlert(runnable)) {
                     runnable.run();
                 }
             });

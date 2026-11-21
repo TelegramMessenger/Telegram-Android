@@ -61,6 +61,51 @@ public final class SharedSettings {
     public static final BooleanSetting buttergramHidePremiumRows =
         BooleanSetting.of("buttergram_hide_premium_rows", false);
 
+    // ButterGram: deleted messages mark
+    public static final BooleanSetting buttergramMarkDeleted =
+        BooleanSetting.of("buttergram_mark_deleted", true);
+
+    public static final IntSetting buttergramDeletedColor =
+        IntSetting.of("buttergram_deleted_color", 0xFFE53935);
+
+    // ButterGram: ids and exact time
+    public static final BooleanSetting buttergramExactTime =
+        BooleanSetting.of("buttergram_exact_time", false);
+
+    public static final BooleanSetting buttergramShowIds =
+        BooleanSetting.of("buttergram_show_ids", false);
+
+    // ButterGram: send confirmations
+    public static final BooleanSetting buttergramWarnOffensive =
+        BooleanSetting.of("buttergram_warn_offensive", false);
+
+    public static final BooleanSetting buttergramConfirmVoice =
+        BooleanSetting.of("buttergram_confirm_voice", false);
+
+    public static final BooleanSetting buttergramConfirmRound =
+        BooleanSetting.of("buttergram_confirm_round", false);
+
+    public static final BooleanSetting buttergramConfirmSticker =
+        BooleanSetting.of("buttergram_confirm_sticker", false);
+
+    // ButterGram: privacy and interface
+    public static final BooleanSetting buttergramHidePhone =
+        BooleanSetting.of("buttergram_hide_phone", false);
+
+    public static final BooleanSetting buttergramHideStories =
+        BooleanSetting.of("buttergram_hide_stories", false);
+
+    public static final BooleanSetting buttergramBigFont =
+        BooleanSetting.of("buttergram_big_font", false);
+
+    // ButterGram: edit history
+    public static final BooleanSetting buttergramEditHistory =
+        BooleanSetting.of("buttergram_edit_history", true);
+
+    // ButterGram: local premium (client side only)
+    public static final BooleanSetting buttergramLocalPremium =
+        BooleanSetting.of("buttergram_local_premium", false);
+
     private SharedSettings() {
     }
 }

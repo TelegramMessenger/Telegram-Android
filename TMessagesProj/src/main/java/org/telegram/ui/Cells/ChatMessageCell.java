@@ -15565,9 +15565,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         } else if (current.scheduled && current.messageOwner.date == 0x7FFFFFFE) {
             return "";
         } else if (current.realDate != 0) {
-            return LocaleController.formatSmallDateChat(current.realDate) + ", " + LocaleController.getInstance().getFormatterDay().format((long) (current.realDate) * 1000);
+            return LocaleController.formatSmallDateChat(current.realDate) + ", " + org.telegram.messenger.ButterGram.formatTime((long) (current.realDate));
         } else if (current.isRepostPreview) {
-            return LocaleController.formatSmallDateChat(message.messageOwner.date) + ", " + LocaleController.getInstance().getFormatterDay().format((long) (message.messageOwner.date) * 1000);
+            return LocaleController.formatSmallDateChat(message.messageOwner.date) + ", " + org.telegram.messenger.ButterGram.formatTime((long) (message.messageOwner.date));
         } else if (edited) {
             if (AppGlobalConfig.getInstance(current.currentAccount).messagePrimaryEditedDate.get()) {
                 if (editDate == 0 && current.isEditing()) {
@@ -15575,7 +15575,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 return LocaleController.formatPmEditedDate(editDate);
             }
-            return getString(R.string.EditedMessage) + " " + LocaleController.getInstance().getFormatterDay().format((long) (message.messageOwner.date) * 1000);
+            return getString(R.string.EditedMessage) + " " + org.telegram.messenger.ButterGram.formatTime((long) (message.messageOwner.date));
         } else if (current.isSaved && current.messageOwner.fwd_from != null && (current.messageOwner.fwd_from.date != 0 || current.messageOwner.fwd_from.saved_date != 0)
                 // A widget keeps its time alone in Saved Messages: the pill over its corner stays short.
                 && !(MessageObject.getMedia(current.messageOwner) instanceof TLRPC.TL_messageMediaWidget)) {
@@ -15585,7 +15585,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             return LocaleController.formatSeenDate(date);
         }
-        return LocaleController.getInstance().getFormatterDay().format((long) (message.messageOwner.date) * 1000);
+        return org.telegram.messenger.ButterGram.formatTime((long) (message.messageOwner.date));
     }
 
     void measureTime(MessageObject messageObject) {
@@ -15698,7 +15698,23 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 currentTimeString = TextUtils.concat(formatString(R.string.MessageScheduledRepeatSeconds, period), ", ", currentTimeString);
             }
         }
+        boolean buttergramDeletedMark = false;
+        if (currentTimeString != null && org.telegram.messenger.ButterGram.isDeleted(messageObject)) {
+            // ButterGram: a trash icon (colour from settings) in front of the time of a message deleted by someone else
+            SpannableStringBuilder mark = new SpannableStringBuilder("\u200B");
+            ColoredImageSpan trash = new ColoredImageSpan(R.drawable.msg_delete, ColoredImageSpan.ALIGN_CENTER);
+            trash.setSize(dp(12));
+            trash.setOverrideColor(org.telegram.utils.settings.SharedSettings.buttergramDeletedColor.get());
+            mark.setSpan(trash, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            mark.append(" ");
+            currentTimeString = TextUtils.concat(mark, currentTimeString);
+            buttergramDeletedMark = true;
+        }
         timeTextWidth = timeWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentTimeString, 0, currentTimeString == null ? 0 : currentTimeString.length()));
+        if (buttergramDeletedMark) {
+            timeTextWidth += dp(12);
+            timeWidth += dp(12);
+        }
         if (currentMessageObject.scheduled && currentMessageObject.messageOwner.date == 0x7FFFFFFE || currentMessageObject.notime) {
             timeWidth -= dp(8);
         }

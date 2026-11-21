@@ -21,6 +21,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.HeaderCell;
@@ -64,6 +65,15 @@ public class ButterGramSettingsActivity extends BaseFragment {
     private static final int ACTION_OPEN_URL = 3;
     private static final int ACTION_OPEN_THEMES = 4;
     private static final int ACTION_OPEN_USERNAME = 5;
+    private static final int ACTION_PICK_COLOR = 6;
+
+    private static final int[] DELETED_COLORS = {
+        0xFFE53935, 0xFFFB8C00, 0xFFFDD835, 0xFF43A047, 0xFF1E88E5, 0xFF8E24AA, 0xFF9E9E9E, 0xFFFFFFFF
+    };
+    private static final int[] DELETED_COLOR_NAMES = {
+        R.string.ButterGramColorRed, R.string.ButterGramColorOrange, R.string.ButterGramColorYellow, R.string.ButterGramColorGreen,
+        R.string.ButterGramColorBlue, R.string.ButterGramColorPurple, R.string.ButterGramColorGray, R.string.ButterGramColorWhite
+    };
 
     private static final class Row {
         final int type;
@@ -122,6 +132,10 @@ public class ButterGramSettingsActivity extends BaseFragment {
             return new Row(TYPE_VALUE, title, 0, "@" + username, ACTION_OPEN_USERNAME, 0, username, null);
         }
 
+        static Row colorPicker(int title, String value) {
+            return new Row(TYPE_VALUE, title, 0, value, ACTION_PICK_COLOR, 0, null, null);
+        }
+
         static Row plainValue(int title, String value) {
             return new Row(TYPE_VALUE, title, 0, value, ACTION_NONE, 0, null, null);
         }
@@ -161,6 +175,16 @@ public class ButterGramSettingsActivity extends BaseFragment {
         }
     }
 
+    private String currentDeletedColorName() {
+        int current = SharedSettings.buttergramDeletedColor.get();
+        for (int i = 0; i < DELETED_COLORS.length; i++) {
+            if (DELETED_COLORS[i] == current) {
+                return LocaleController.getString(DELETED_COLOR_NAMES[i]);
+            }
+        }
+        return String.format("#%06X", current & 0xFFFFFF);
+    }
+
     private void buildRows() {
         rows.clear();
         switch (page) {
@@ -170,17 +194,38 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.check(R.string.ButterGramGhostTyping, SharedSettings.buttergramGhostTyping));
                 rows.add(Row.check(R.string.ButterGramGhostOnline, SharedSettings.buttergramGhostOnline));
                 rows.add(Row.info(R.string.ButterGramGhostInfo));
+                rows.add(Row.header(R.string.ButterGramConfirmHeader));
+                rows.add(Row.check(R.string.ButterGramSettingOffensive, SharedSettings.buttergramWarnOffensive));
+                rows.add(Row.check(R.string.ButterGramSettingVoice, SharedSettings.buttergramConfirmVoice));
+                rows.add(Row.check(R.string.ButterGramSettingRound, SharedSettings.buttergramConfirmRound));
+                rows.add(Row.check(R.string.ButterGramSettingSticker, SharedSettings.buttergramConfirmSticker));
+                rows.add(Row.info(R.string.ButterGramConfirmInfo));
+                rows.add(Row.header(R.string.ButterGramPrivacyHeader));
+                rows.add(Row.check(R.string.ButterGramHidePhone, SharedSettings.buttergramHidePhone));
+                rows.add(Row.info(R.string.ButterGramHidePhoneInfo));
+                rows.add(Row.header(R.string.ButterGramPremiumHeader));
+                rows.add(Row.check(R.string.ButterGramLocalPremium, SharedSettings.buttergramLocalPremium));
+                rows.add(Row.info(R.string.ButterGramLocalPremiumInfo));
                 break;
             case PAGE_APPEARANCE:
                 rows.add(Row.header(R.string.ButterGramInterface));
                 rows.add(Row.check(R.string.ButterGramHidePremiumRows, SharedSettings.buttergramHidePremiumRows));
+                rows.add(Row.check(R.string.ButterGramHideStories, SharedSettings.buttergramHideStories));
+                rows.add(Row.check(R.string.ButterGramBigFont, SharedSettings.buttergramBigFont));
                 rows.add(Row.themes(R.string.ButterGramThemeSettings, R.drawable.msg_theme));
-                rows.add(Row.info(R.string.ButterGramHidePremiumInfo));
+                rows.add(Row.info(R.string.ButterGramAppearanceInfo));
                 break;
             case PAGE_CHATS:
                 rows.add(Row.header(R.string.ButterGramMessages));
                 rows.add(Row.check(R.string.ButterGramSaveDeleted, SharedSettings.buttergramSaveDeleted));
+                rows.add(Row.check(R.string.ButterGramMarkDeleted, SharedSettings.buttergramMarkDeleted));
+                rows.add(Row.colorPicker(R.string.ButterGramDeletedColor, currentDeletedColorName()));
                 rows.add(Row.info(R.string.ButterGramSaveDeletedInfo));
+                rows.add(Row.header(R.string.ButterGramDetailsHeader));
+                rows.add(Row.check(R.string.ButterGramExactTime, SharedSettings.buttergramExactTime));
+                rows.add(Row.check(R.string.ButterGramShowIds, SharedSettings.buttergramShowIds));
+                rows.add(Row.check(R.string.ButterGramEditHistorySetting, SharedSettings.buttergramEditHistory));
+                rows.add(Row.info(R.string.ButterGramEditHistoryInfo));
                 break;
             case PAGE_OTHER:
                 rows.add(Row.header(R.string.ButterGramAbout));
@@ -201,6 +246,27 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.username(R.string.ButterGramChatLink, USERNAME_CHAT));
                 break;
         }
+    }
+
+    private void showColorDialog() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        CharSequence[] names = new CharSequence[DELETED_COLORS.length];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = LocaleController.getString(DELETED_COLOR_NAMES[i]);
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(LocaleController.getString(R.string.ButterGramColorTitle));
+        builder.setItems(names, (dialog, which) -> {
+            SharedSettings.buttergramDeletedColor.set(DELETED_COLORS[which]);
+            buildRows();
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     @Override
@@ -271,6 +337,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 if (row.url != null) {
                     getMessagesController().openByUserName(row.url, this, 1);
                 }
+                break;
+            case ACTION_PICK_COLOR:
+                showColorDialog();
                 break;
             case ACTION_OPEN_THEMES:
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));

@@ -1265,6 +1265,7 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_ADD_STICKER_TO_FAVORITES = 20;
     public final static int OPTION_DELETE_STICKER_FROM_FAVORITES = 21;
     public final static int OPTION_COPY_LINK = 22;
+    public final static int OPTION_BUTTERGRAM_EDITS = 5001;
     public final static int OPTION_REPORT_CHAT = 23;
     public final static int OPTION_CANCEL_SENDING = 24;
     public final static int OPTION_UNVOTE = 25;
@@ -34287,6 +34288,32 @@ public class ChatActivity extends BaseFragment implements
         MediaController.saveFile(path, getParentActivity(), messageObject.isVideo() ? 1 : 0, null, null);
     }
 
+    /** ButterGram: earlier versions of an edited message, newest first. */
+    private void showButterGramEdits(MessageObject message) {
+        if (message == null || getParentActivity() == null) {
+            return;
+        }
+        java.util.List<Object[]> edits = org.telegram.messenger.ButterGram.getEdits(message);
+        if (edits.isEmpty()) {
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = edits.size() - 1; i >= 0; i--) {
+            Object[] entry = edits.get(i);
+            long date = ((Integer) entry[0]).longValue();
+            if (sb.length() > 0) {
+                sb.append("\n\n");
+            }
+            sb.append(LocaleController.formatSmallDateChat(date)).append(", ").append(org.telegram.messenger.ButterGram.formatTime(date)).append('\n');
+            sb.append((String) entry[1]);
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), themeDelegate);
+        builder.setTitle(LocaleController.getString(R.string.ButterGramEditHistory));
+        builder.setMessage(sb.toString());
+        builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
+        showDialog(builder.create());
+    }
+
     private void processSelectedOption(int option) {
         if (selectedObject == null || getParentActivity() == null) {
             return;
@@ -34962,6 +34989,10 @@ public class ChatActivity extends BaseFragment implements
             }
             case OPTION_DELETE_STICKER_FROM_FAVORITES: {
                 getMediaDataController().addRecentSticker(MediaDataController.TYPE_FAVE, selectedObject, selectedObject.getDocument(), (int) (System.currentTimeMillis() / 1000), true);
+                break;
+            }
+            case OPTION_BUTTERGRAM_EDITS: {
+                showButterGramEdits(selectedObject);
                 break;
             }
             case OPTION_COPY_LINK: {
@@ -46700,6 +46731,11 @@ public class ChatActivity extends BaseFragment implements
                     items.add(LocaleController.getString(R.string.CopyLink));
                     options.add(OPTION_COPY_LINK);
                     icons.add(R.drawable.msg_link);
+                }
+                if (selectedObject != null && !org.telegram.messenger.ButterGram.getEdits(selectedObject).isEmpty()) {
+                    items.add(LocaleController.getString(R.string.ButterGramEditHistory));
+                    options.add(OPTION_BUTTERGRAM_EDITS);
+                    icons.add(R.drawable.msg_recent);
                 }
                 if (selectedObject != null && selectedObject.messageOwner != null && selectedObject.messageOwner.action == null && currentChat != null && currentChat.forum && !isTopic && selectedObject.messageOwner != null && selectedObject.messageOwner.reply_to != null && selectedObject.messageOwner.reply_to.forum_topic) {
                     items.add(LocaleController.getString(R.string.ViewInTopic));

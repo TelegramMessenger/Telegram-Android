@@ -12427,7 +12427,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         boolean onlySelfStories = !isArchive() && getStoriesController().hasOnlySelfStories();
         boolean newVisibility;
-        if (communityId != 0) {
+        if (org.telegram.utils.settings.SharedSettings.buttergramHideStories.get()) {
+            // ButterGram: hide the stories bar above the chat list
+            newVisibility = false;
+            onlySelfStories = false;
+        } else if (communityId != 0) {
             newVisibility = false;
         } else if (isArchive()) {
             newVisibility = !getStoriesController().getHiddenList().isEmpty();
@@ -12435,6 +12439,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             newVisibility = !onlySelfStories && getStoriesController().hasStories();
             onlySelfStories = getStoriesController().hasOnlySelfStories();
         }
+
 
         hasOnlySlefStories = onlySelfStories;
 
