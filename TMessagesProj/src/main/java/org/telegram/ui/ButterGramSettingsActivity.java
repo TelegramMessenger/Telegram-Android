@@ -46,8 +46,8 @@ public class ButterGramSettingsActivity extends BaseFragment {
     public static final int PAGE_CHATS = 3;
     public static final int PAGE_OTHER = 4;
 
-    private static final String URL_SOURCE = "https://github.com/xenone-beta/ButterGram";
-    private static final String URL_ORIGINAL = "https://github.com/TelegramMessenger/Telegram-Android";
+    private static final String USERNAME_CHANNEL = "ButterGramClient";
+    private static final String USERNAME_CHAT = "ButterGramChat";
     private static final String URL_LICENSE = "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html";
 
     private static final int TYPE_LOGO = 0;
@@ -63,6 +63,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
     private static final int ACTION_TOGGLE = 2;
     private static final int ACTION_OPEN_URL = 3;
     private static final int ACTION_OPEN_THEMES = 4;
+    private static final int ACTION_OPEN_USERNAME = 5;
 
     private static final class Row {
         final int type;
@@ -115,6 +116,10 @@ public class ButterGramSettingsActivity extends BaseFragment {
 
         static Row link(int title, String value, String url) {
             return new Row(TYPE_VALUE, title, 0, value, ACTION_OPEN_URL, 0, url, null);
+        }
+
+        static Row username(int title, String username) {
+            return new Row(TYPE_VALUE, title, 0, "@" + username, ACTION_OPEN_USERNAME, 0, username, null);
         }
 
         static Row plainValue(int title, String value) {
@@ -192,8 +197,8 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.category(R.string.ButterGramOther, R.drawable.msg_info, PAGE_OTHER));
                 rows.add(Row.shadow());
                 rows.add(Row.header(R.string.ButterGramLinks));
-                rows.add(Row.link(R.string.ButterGramSourceCode, "GitHub", URL_SOURCE));
-                rows.add(Row.link(R.string.ButterGramOriginalClient, "Telegram-Android", URL_ORIGINAL));
+                rows.add(Row.username(R.string.ButterGramChannel, USERNAME_CHANNEL));
+                rows.add(Row.username(R.string.ButterGramChatLink, USERNAME_CHAT));
                 break;
         }
     }
@@ -260,6 +265,11 @@ public class ButterGramSettingsActivity extends BaseFragment {
             case ACTION_OPEN_URL:
                 if (row.url != null && getParentActivity() != null) {
                     Browser.openUrl(getParentActivity(), row.url);
+                }
+                break;
+            case ACTION_OPEN_USERNAME:
+                if (row.url != null) {
+                    getMessagesController().openByUserName(row.url, this, 1);
                 }
                 break;
             case ACTION_OPEN_THEMES:

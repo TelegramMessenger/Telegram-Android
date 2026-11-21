@@ -281,11 +281,11 @@
     <string name="ButterGramChats">Чаты</string>
     <string name="ButterGramOther">Другое</string>
     <string name="ButterGramLinks">Ссылки</string>
-    <string name="ButterGramSourceCode">Исходный код</string>
-    <string name="ButterGramOriginalClient">Оригинальный клиент</string>
     <string name="ButterGramThemeSettings">Темы и оформление Telegram</string>
     <string name="ButterGramAbout">О ButterGram</string>
     <string name="ButterGramVersion">Версия</string>
     <string name="ButterGramLicense">Лицензия</string>
     <string name="ButterGramAboutInfo">ButterGram — неофициальный клиент Telegram на основе открытого исходного кода Telegram для Android, распространяется по лицензии GPLv2.</string>
+    <string name="ButterGramChannel">Канал</string>
+    <string name="ButterGramChatLink">Чат</string>
 </resources>

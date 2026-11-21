@@ -11697,11 +11697,11 @@
     <string name="ButterGramChats">Chats</string>
     <string name="ButterGramOther">Other</string>
     <string name="ButterGramLinks">Links</string>
-    <string name="ButterGramSourceCode">Source code</string>
-    <string name="ButterGramOriginalClient">Original client</string>
     <string name="ButterGramThemeSettings">Telegram themes and appearance</string>
     <string name="ButterGramAbout">About ButterGram</string>
     <string name="ButterGramVersion">Version</string>
     <string name="ButterGramLicense">License</string>
     <string name="ButterGramAboutInfo">ButterGram is an unofficial Telegram client based on the open source Telegram for Android and is distributed under GPLv2.</string>
+    <string name="ButterGramChannel">Channel</string>
+    <string name="ButterGramChatLink">Chat</string>
 </resources>
