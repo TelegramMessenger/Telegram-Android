@@ -788,7 +788,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asShadow(null));
         }
 
-        items.add(SettingCell.Factory.of(28, 0xFFFFD54F, 0xFFFFB300, R.drawable.settings_features, getString(R.string.ButterGramSettings)));
+        items.add(SettingCell.Factory.of(28, 0xFFE3B948, 0xFFCFA33A, R.drawable.settings_buttergram, getString(R.string.ButterGramSettings)));
         items.add(UItem.asShadow(null));
 
         final boolean walletAbove = getConnectionsManager().getCurrentTime() - 1791538462 < 4 * 7 * 24 * 60 * 60;
