@@ -324,4 +324,6 @@
     <string name="ButterGramEditHistorySetting">Сохранять историю правок</string>
     <string name="ButterGramEditHistoryInfo">Сохраняет прежний текст сообщений, отредактированных, пока работает ButterGram. Открывается из меню сообщения.</string>
     <string name="ButterGramEditHistory">История правок</string>
+    <string name="ButterGramOfficialResource">ButterGram является официальным ресурсом ButterGram.</string>
+    <string name="ButterGramTeamMember">%1$s является членом команды ButterGram</string>
 </resources>

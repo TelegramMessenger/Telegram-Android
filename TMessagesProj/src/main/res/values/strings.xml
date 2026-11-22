@@ -11740,4 +11740,6 @@
     <string name="ButterGramEditHistorySetting">Keep edit history</string>
     <string name="ButterGramEditHistoryInfo">Saves the previous text of messages edited while ButterGram is running. Open it from the message menu.</string>
     <string name="ButterGramEditHistory">Edit history</string>
+    <string name="ButterGramOfficialResource">ButterGram is an official ButterGram resource.</string>
+    <string name="ButterGramTeamMember">%1$s is a member of the ButterGram team</string>
 </resources>

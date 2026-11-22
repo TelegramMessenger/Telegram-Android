@@ -204,4 +204,47 @@ public final class ButterGram {
     public static long channelIdOf(TLRPC.Message message) {
         return message != null && message.peer_id != null ? message.peer_id.channel_id : 0;
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // Official ButterGram badge (local to this client, it is NOT a Telegram verification)
+    // ---------------------------------------------------------------------------------------------
+
+    public static final int OFFICIAL_NONE = 0;
+    public static final int OFFICIAL_RESOURCE = 1;
+    public static final int OFFICIAL_TEAM = 2;
+
+    private static final long[] OFFICIAL_CHANNELS = {4392732376L, 4372744306L};
+    private static final long[] TEAM_USERS = {5074845818L};
+
+    public static int officialKind(boolean user, long id) {
+        long[] list = user ? TEAM_USERS : OFFICIAL_CHANNELS;
+        for (long v : list) {
+            if (v == Math.abs(id)) {
+                return user ? OFFICIAL_TEAM : OFFICIAL_RESOURCE;
+            }
+        }
+        return OFFICIAL_NONE;
+    }
+
+    public static android.graphics.drawable.Drawable badge() {
+        android.graphics.drawable.Drawable d = androidx.core.content.ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.buttergram_badge);
+        return d != null ? d.mutate() : null;
+    }
+
+    /** Text shown when the badge is tapped. */
+    public static String officialText(int kind, TLRPC.User user) {
+        if (kind == OFFICIAL_TEAM) {
+            String nick = null;
+            if (user != null) {
+                nick = UserObject.getPublicUsername(user);
+                if (nick != null) {
+                    nick = "@" + nick;
+                } else {
+                    nick = UserObject.getUserName(user);
+                }
+            }
+            return LocaleController.formatString(R.string.ButterGramTeamMember, nick == null ? "" : nick);
+        }
+        return LocaleController.getString(R.string.ButterGramOfficialResource);
+    }
 }

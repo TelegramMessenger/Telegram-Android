@@ -12169,7 +12169,25 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(photoBig) && (getLastStoryViewer() == null || getLastStoryViewer().transitionViewHolder.view != avatarImage), storyView != null);
         }
 
+        buttergramApplyBadge();
         needLayout(true);
+    }
+
+    /** ButterGram: local "official" badge next to the name, tapping it explains what it is. */
+    private void buttergramApplyBadge() {
+        final boolean isUser = userId != 0;
+        final long id = isUser ? userId : chatId;
+        final int kind = org.telegram.messenger.ButterGram.officialKind(isUser, id);
+        if (kind == org.telegram.messenger.ButterGram.OFFICIAL_NONE || nameTextView == null) {
+            return;
+        }
+        final TLRPC.User user = isUser ? getMessagesController().getUser(userId) : null;
+        nameTextView.setRightDrawableOutside(true);
+        nameTextView.setRightDrawable(org.telegram.messenger.ButterGram.badge());
+        nameTextViewRightDrawableContentDescription = org.telegram.messenger.ButterGram.officialText(kind, user);
+        nameTextView.setRightDrawableOnClick(v -> {
+            BulletinFactory.of(ProfileActivity.this).createSimpleBulletin(R.raw.info, org.telegram.messenger.ButterGram.officialText(kind, user)).show();
+        });
     }
 
     private CharSequence appendCommunityHiddenRow(CharSequence text) {
