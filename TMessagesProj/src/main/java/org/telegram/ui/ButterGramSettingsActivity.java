@@ -31,7 +31,9 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Components.ButterGramPreviewView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.utils.settings.BooleanSetting;
 import org.telegram.utils.settings.IntSetting;
@@ -62,6 +64,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
     private static final int TYPE_VALUE = 4;
     private static final int TYPE_INFO = 5;
     private static final int TYPE_SHADOW = 6;
+    private static final int TYPE_PREVIEW = 7;
+    private static final int TYPE_SLIDER = 8;
+    private static final int PREVIEW_BASE = 20;
 
     private static final int ACTION_NONE = 0;
     private static final int ACTION_OPEN_PAGE = 1;
@@ -93,6 +98,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
         IntSetting intSetting;
         int[] choiceValues;
         String[] choiceLabels;
+        int previewKind;
 
         Row(int type, int title, int icon, String value, int action, int page, String url, BooleanSetting setting) {
             this.type = type;
@@ -147,6 +153,20 @@ public class ButterGramSettingsActivity extends BaseFragment {
 
         static Row choice(int title, IntSetting setting, int[] values, String[] labels) {
             Row r = new Row(TYPE_VALUE, title, 0, null, ACTION_CHOICE, 0, null, null);
+            r.intSetting = setting;
+            r.choiceValues = values;
+            r.choiceLabels = labels;
+            return r;
+        }
+
+        static Row preview(int kind) {
+            Row r = new Row(TYPE_PREVIEW, 0, 0, null, ACTION_NONE, 0, null, null);
+            r.previewKind = kind;
+            return r;
+        }
+
+        static Row slider(int title, IntSetting setting, int[] values, String[] labels) {
+            Row r = new Row(TYPE_SLIDER, title, 0, null, ACTION_NONE, 0, null, null);
             r.intSetting = setting;
             r.choiceValues = values;
             r.choiceLabels = labels;
@@ -232,6 +252,93 @@ public class ButterGramSettingsActivity extends BaseFragment {
         };
     }
 
+    /** Redraws every visible live preview after a setting changed. */
+    private void invalidatePreviews() {
+        if (listView == null) {
+            return;
+        }
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            View child = listView.getChildAt(i);
+            if (child instanceof ButterGramPreviewView) {
+                child.invalidate();
+            }
+        }
+    }
+
+    /** A titled slider with discrete steps; moving it updates the setting and the previews right away. */
+    private class SliderCell extends LinearLayout {
+        private final TextView titleView;
+        private final TextView valueView;
+        private final SeekBarView seekBar;
+        private Row row;
+        private int index;
+
+        SliderCell(Context context) {
+            super(context);
+            setOrientation(VERTICAL);
+
+            FrameLayout top = new FrameLayout(context);
+            titleView = new TextView(context);
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            titleView.setTypeface(AndroidUtilities.bold());
+            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            top.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+            valueView = new TextView(context);
+            valueView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            valueView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            top.addView(valueView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+            addView(top, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, 0, 8, 0, 0));
+
+            seekBar = new SeekBarView(context);
+            seekBar.setReportChanges(true);
+            seekBar.setDelegate(new SeekBarView.SeekBarViewDelegate() {
+                @Override
+                public void onSeekBarDrag(boolean stop, float progress) {
+                    if (row == null) {
+                        return;
+                    }
+                    int count = row.choiceValues.length;
+                    int idx = Math.max(0, Math.min(count - 1, Math.round(progress * (count - 1))));
+                    if (idx != index) {
+                        index = idx;
+                        row.intSetting.set(row.choiceValues[idx]);
+                        valueView.setText(row.choiceLabels[idx]);
+                        invalidatePreviews();
+                    }
+                    if (stop) {
+                        seekBar.setProgress(idx / (float) (count - 1));
+                    }
+                }
+
+                @Override
+                public void onSeekBarPressed(boolean pressed) {
+                }
+
+                @Override
+                public int getStepsCount() {
+                    return row == null ? 0 : row.choiceValues.length;
+                }
+            });
+            addView(seekBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 38, 6, 0, 6, 8));
+        }
+
+        void bind(Row row) {
+            this.row = null;
+            int cur = row.intSetting.get();
+            int best = 0;
+            for (int i = 0; i < row.choiceValues.length; i++) {
+                if (row.choiceValues[i] == cur) {
+                    best = i;
+                }
+            }
+            index = best;
+            titleView.setText(LocaleController.getString(row.title));
+            valueView.setText(row.choiceLabels[best]);
+            seekBar.setProgress(best / (float) Math.max(1, row.choiceValues.length - 1));
+            this.row = row;
+        }
+    }
+
     private void showChoiceDialog(Row row) {
         if (getParentActivity() == null || row.intSetting == null) {
             return;
@@ -312,6 +419,8 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.info(R.string.ButterGramLocalPremiumInfo));
                 break;
             case PAGE_APPEARANCE:
+                rows.add(Row.preview(ButterGramPreviewView.KIND_LIST));
+                rows.add(Row.info(R.string.ButterGramPreviewHint));
                 rows.add(Row.header(R.string.ButterGramInterface));
                 rows.add(Row.check(R.string.ButterGramHidePremiumRows, SharedSettings.buttergramHidePremiumRows));
                 rows.add(Row.check(R.string.ButterGramHideStories, SharedSettings.buttergramHideStories));
@@ -326,11 +435,15 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.check(R.string.ButterGramHideSearch, SharedSettings.buttergramHideSearch));
                 rows.add(Row.info(R.string.ButterGramListInfo));
                 rows.add(Row.header(R.string.ButterGramShapesHeader));
-                rows.add(Row.choice(R.string.ButterGramAvatarRadius, SharedSettings.buttergramAvatarRadius, PERCENT_AVATAR, avatarLabels()));
-                rows.add(Row.choice(R.string.ButterGramStickerSize, SharedSettings.buttergramStickerScale, PERCENT_STICKER, percentLabels(PERCENT_STICKER)));
+                rows.add(Row.preview(ButterGramPreviewView.KIND_LIST));
+                rows.add(Row.slider(R.string.ButterGramAvatarRadius, SharedSettings.buttergramAvatarRadius, PERCENT_AVATAR, avatarLabels()));
+                rows.add(Row.preview(ButterGramPreviewView.KIND_STICKER));
+                rows.add(Row.slider(R.string.ButterGramStickerSize, SharedSettings.buttergramStickerScale, PERCENT_STICKER, percentLabels(PERCENT_STICKER)));
                 rows.add(Row.info(R.string.ButterGramShapesInfo));
                 break;
             case PAGE_CHATS:
+                rows.add(Row.preview(ButterGramPreviewView.KIND_BUBBLE));
+                rows.add(Row.info(R.string.ButterGramPreviewHint));
                 rows.add(Row.header(R.string.ButterGramMessages));
                 rows.add(Row.check(R.string.ButterGramSaveDeleted, SharedSettings.buttergramSaveDeleted));
                 rows.add(Row.check(R.string.ButterGramMarkDeleted, SharedSettings.buttergramMarkDeleted));
@@ -342,6 +455,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.check(R.string.ButterGramEditHistorySetting, SharedSettings.buttergramEditHistory));
                 rows.add(Row.info(R.string.ButterGramEditHistoryInfo));
                 rows.add(Row.header(R.string.ButterGramBubblesHeader));
+                rows.add(Row.preview(ButterGramPreviewView.KIND_BUBBLE));
                 rows.add(Row.check(R.string.ButterGramNoTail, SharedSettings.buttergramNoTail));
                 rows.add(Row.check(R.string.ButterGramEditedIcon, SharedSettings.buttergramEditedIcon));
                 rows.add(Row.check(R.string.ButterGramShowForwards, SharedSettings.buttergramShowForwards));
@@ -464,6 +578,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 if (row.setting != null) {
                     row.setting.toggle();
                     adapter.notifyItemChanged(position);
+                    invalidatePreviews();
                 }
                 break;
             case ACTION_OPEN_PAGE:
@@ -552,6 +667,11 @@ public class ButterGramSettingsActivity extends BaseFragment {
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view;
+            if (viewType >= PREVIEW_BASE) {
+                view = new ButterGramPreviewView(context, viewType - PREVIEW_BASE);
+                view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
+                return new RecyclerListView.Holder(view);
+            }
             switch (viewType) {
                 case TYPE_LOGO:
                     view = new LogoCell(context);
@@ -568,6 +688,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
                     break;
                 case TYPE_SHADOW:
                     view = new ShadowSectionCell(context);
+                    break;
+                case TYPE_SLIDER:
+                    view = new SliderCell(context);
                     break;
                 default:
                     view = new TextInfoPrivacyCell(context);
@@ -602,6 +725,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 case TYPE_INFO:
                     ((TextInfoPrivacyCell) holder.itemView).setText(LocaleController.getString(row.title));
                     break;
+                case TYPE_SLIDER:
+                    ((SliderCell) holder.itemView).bind(row);
+                    break;
                 default:
                     break;
             }
@@ -614,7 +740,8 @@ public class ButterGramSettingsActivity extends BaseFragment {
 
         @Override
         public int getItemViewType(int position) {
-            return rows.get(position).type;
+            Row row = rows.get(position);
+            return row.type == TYPE_PREVIEW ? PREVIEW_BASE + row.previewKind : row.type;
         }
     }
 }

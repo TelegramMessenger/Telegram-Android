@@ -367,4 +367,7 @@
     <string name="ButterGramMenuInfo">Включённые пункты скрываются из меню сообщения.</string>
     <string name="ButterGramEndlessRecents">Бесконечные недавние стикеры</string>
     <string name="ButterGramGesturesInfo">Недавние стикеры дольше хранятся на этом устройстве, но сервер может обрезать свой список.</string>
+    <string name="ButterGramPreviewChat">Чат</string>
+    <string name="ButterGramPreviewText">Привет! Вот как это выглядит</string>
+    <string name="ButterGramPreviewHint">Предпросмотр обновляется при изменении настроек</string>
 </resources>

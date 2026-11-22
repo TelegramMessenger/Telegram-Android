@@ -11783,4 +11783,7 @@
     <string name="ButterGramMenuInfo">Turned on items are hidden from the message menu.</string>
     <string name="ButterGramEndlessRecents">Endless recent stickers</string>
     <string name="ButterGramGesturesInfo">Recent stickers are kept longer on this device; the server may still trim its own list.</string>
+    <string name="ButterGramPreviewChat">Chat</string>
+    <string name="ButterGramPreviewText">Hi! This is how it looks</string>
+    <string name="ButterGramPreviewHint">Preview updates as you change options</string>
 </resources>
