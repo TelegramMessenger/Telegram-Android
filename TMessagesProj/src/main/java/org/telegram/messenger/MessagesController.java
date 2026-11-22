@@ -18906,6 +18906,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (org.telegram.utils.settings.SharedSettings.buttergramSaveDeleted.get()) {
                     // ButterGram: keep messages that were deleted remotely
                     ButterGram.markDeleted(currentAccount, 0, update.messages);
+                    ButterGramChangeLog.logDeleted(getMessagesStorage(), currentAccount, 0, update.messages);
                     continue;
                 }
                 if (deletedMessages == null) {
@@ -19440,6 +19441,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (org.telegram.utils.settings.SharedSettings.buttergramSaveDeleted.get()) {
                     // ButterGram: keep messages that were deleted remotely
                     ButterGram.markDeleted(currentAccount, update.channel_id, update.messages);
+                    ButterGramChangeLog.logDeleted(getMessagesStorage(), currentAccount, update.channel_id, update.messages);
                     continue;
                 }
                 if (deletedMessages == null) {
@@ -19579,6 +19581,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.Message previous = getMessagesStorage().getMessage(message.dialog_id, message.id);
                         if (previous != null && previous.message != null && !previous.message.equals(message.message)) {
                             ButterGram.saveEdit(currentAccount, ButterGram.channelIdOf(message), message.id, previous.edit_date != 0 ? previous.edit_date : previous.date, previous.message);
+                            ButterGramChangeLog.logEdit(currentAccount, message.dialog_id, message.id, previous.message, message.message);
                         }
                     } catch (Throwable e) {
                         FileLog.e(e);

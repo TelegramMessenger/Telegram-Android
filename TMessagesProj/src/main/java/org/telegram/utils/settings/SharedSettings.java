@@ -175,6 +175,10 @@ public final class SharedSettings {
     public static final IntSetting buttergramStickerScale =
         IntSetting.of("buttergram_sticker_scale", 100);
 
+    // seconds the text message is held back with an "Undo" button, 0 = off
+    public static final IntSetting buttergramUndoSend =
+        IntSetting.of("buttergram_undo_send", 0);
+
     // 0 reply, 1 forward, 2 copy text, 3 nothing
     public static final IntSetting buttergramSwipeAction =
         IntSetting.of("buttergram_swipe_action", 0);

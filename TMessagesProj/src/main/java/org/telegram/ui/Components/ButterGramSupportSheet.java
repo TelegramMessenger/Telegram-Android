@@ -108,7 +108,7 @@ public final class ButterGramSupportSheet {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(24), dp(20), dp(24), dp(16));
 
-        content.addView(new BadgeView(context, entry != null ? entry.emoji : 0), LayoutHelper.createLinear(110, 110, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 12));
+        content.addView(new BadgeView(context, entry != null ? entry.emoji : 0), LayoutHelper.createLinear(130, 130, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 12));
 
         CharSequence title;
         if (user != null) {
@@ -193,7 +193,10 @@ public final class ButterGramSupportSheet {
         BadgeView(Context context, long documentId) {
             super(context);
             if (documentId != 0) {
-                emojiDrawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, documentId);
+                emojiDrawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_LARGE_140, documentId);
+                if (emojiDrawable.getImageReceiver() != null) {
+                    emojiDrawable.getImageReceiver().setRoundRadius(0);
+                }
                 drawable = emojiDrawable;
             } else {
                 emojiDrawable = null;

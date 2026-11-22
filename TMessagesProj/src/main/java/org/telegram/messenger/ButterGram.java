@@ -50,6 +50,23 @@ public final class ButterGram {
         }
     }
 
+    public static int undoSendSeconds() {
+        return org.telegram.utils.settings.SharedSettings.buttergramUndoSend.get();
+    }
+
+    /** Holds the send back for the configured time; Undo runs restore instead, leaving the chat or timeout runs send. */
+    public static void sendWithUndo(org.telegram.ui.ActionBar.BaseFragment fragment, Runnable send, Runnable restore) {
+        int seconds = undoSendSeconds();
+        if (seconds <= 0 || fragment == null || fragment.getParentActivity() == null) {
+            send.run();
+            return;
+        }
+        org.telegram.ui.Components.BulletinFactory.of(fragment)
+            .createUndoBulletin(LocaleController.getString(R.string.ButterGramUndoSending), restore, send)
+            .setDuration(seconds * 1000)
+            .show();
+    }
+
     /** Id of the fake messages used by the settings previews. */
     public static final int PREVIEW_MESSAGE_ID = -7777;
 

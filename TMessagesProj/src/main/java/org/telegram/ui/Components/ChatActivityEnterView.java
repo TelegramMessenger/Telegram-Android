@@ -8050,7 +8050,21 @@ public class ChatActivityEnterView extends FrameLayout implements
                     setWebPage(null, true);
                     parentFragment.fallbackFieldPanel();
                 }
-                SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+                if (start == 0 && end == text.length() && scheduleDate == 0 && parentFragment != null && !delegate.hasForwardingMessages() && org.telegram.messenger.ButterGram.undoSendSeconds() > 0) {
+                    final CharSequence restoreText = new android.text.SpannableStringBuilder(text);
+                    final SendMessagesHelper.SendMessageParams delayedParams = params;
+                    final int delayedAccount = currentAccount;
+                    org.telegram.messenger.ButterGram.sendWithUndo(parentFragment,
+                        () -> SendMessagesHelper.getInstance(delayedAccount).sendMessage(delayedParams),
+                        () -> {
+                            setFieldText(restoreText);
+                            if (messageEditText != null) {
+                                messageEditText.requestFocus();
+                            }
+                        });
+                } else {
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+                }
                 start = end + 1;
             } while (end != text.length());
             return true;

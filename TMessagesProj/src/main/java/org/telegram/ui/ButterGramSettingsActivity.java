@@ -82,6 +82,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
     private static final int ACTION_TONKEEPER = 9;
     private static final int ACTION_HOW_TO = 10;
     private static final int ACTION_RESET = 11;
+    private static final int ACTION_CHANGES = 12;
 
     private static final int[] DELETED_COLORS = {
         0xFFE53935, 0xFFFB8C00, 0xFFFDD835, 0xFF43A047, 0xFF1E88E5, 0xFF8E24AA, 0xFF9E9E9E, 0xFFFFFFFF
@@ -254,6 +255,13 @@ public class ButterGramSettingsActivity extends BaseFragment {
         };
     }
 
+    private String[] undoLabels() {
+        String sec = LocaleController.getString(R.string.ButterGramUndoSeconds);
+        return new String[]{
+            LocaleController.getString(R.string.ButterGramUndoOff), String.format(sec, 3), String.format(sec, 5), String.format(sec, 10), String.format(sec, 15)
+        };
+    }
+
     private String[] swipeLabels() {
         return new String[]{
             LocaleController.getString(R.string.ButterGramSwipeReply), LocaleController.getString(R.string.ButterGramSwipeForward),
@@ -273,6 +281,53 @@ public class ButterGramSettingsActivity extends BaseFragment {
             } else if (child instanceof org.telegram.ui.Cells.ButterGramMessagesPreviewCell) {
                 ((org.telegram.ui.Cells.ButterGramMessagesPreviewCell) child).refresh();
             }
+        }
+    }
+
+    /** A round picture used as a row icon (keeps its own colours, no tint). */
+    private static class CircleIcon extends android.graphics.drawable.Drawable {
+        private final android.graphics.Bitmap bitmap;
+        private final android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
+        private final android.graphics.Rect src;
+
+        CircleIcon(Context context, int res) {
+            bitmap = android.graphics.BitmapFactory.decodeResource(context.getResources(), res);
+            src = new android.graphics.Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        }
+
+        @Override
+        public void draw(@NonNull android.graphics.Canvas canvas) {
+            android.graphics.Rect b = getBounds();
+            canvas.save();
+            android.graphics.Path path = new android.graphics.Path();
+            path.addCircle(b.exactCenterX(), b.exactCenterY(), Math.min(b.width(), b.height()) / 2f, android.graphics.Path.Direction.CW);
+            canvas.clipPath(path);
+            canvas.drawBitmap(bitmap, src, b, paint);
+            canvas.restore();
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return AndroidUtilities.dp(26);
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return AndroidUtilities.dp(26);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(android.graphics.ColorFilter colorFilter) {
+        }
+
+        @Override
+        public int getOpacity() {
+            return android.graphics.PixelFormat.TRANSLUCENT;
         }
     }
 
@@ -495,6 +550,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.check(R.string.ButterGramHideReactionsIn, SharedSettings.buttergramHideReactionsIn));
                 rows.add(Row.check(R.string.ButterGramHideReactionsOut, SharedSettings.buttergramHideReactionsOut));
                 rows.add(Row.info(R.string.ButterGramBubblesInfo));
+                rows.add(Row.header(R.string.ButterGramSendHeader));
+                rows.add(Row.choice(R.string.ButterGramUndoSend, SharedSettings.buttergramUndoSend, new int[]{0, 3, 5, 10, 15}, undoLabels()));
+                rows.add(Row.info(R.string.ButterGramUndoInfo));
                 rows.add(Row.header(R.string.ButterGramGesturesHeader));
                 rows.add(Row.choice(R.string.ButterGramSwipeAction, SharedSettings.buttergramSwipeAction, new int[]{0, 1, 2, 3}, swipeLabels()));
                 rows.add(Row.category(R.string.ButterGramMenuTitle, R.drawable.msg_list, PAGE_MENU));
@@ -516,9 +574,10 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 break;
             case PAGE_OTHER:
                 rows.add(Row.header(R.string.ButterGramSupportHeader));
-                rows.add(Row.action(R.string.ButterGramTonkeeper, R.drawable.buttergram_tonkeeper, ACTION_TONKEEPER));
+                rows.add(Row.action(R.string.ButterGramTonkeeper, R.drawable.buttergram_keeper, ACTION_TONKEEPER));
                 rows.add(Row.action(R.string.ButterGramHowToGet, R.drawable.msg_premium_badge, ACTION_HOW_TO));
                 rows.add(Row.info(R.string.ButterGramSupportInfo));
+                rows.add(Row.action(R.string.ButterGramChanges, R.drawable.msg_log, ACTION_CHANGES));
                 rows.add(Row.header(R.string.ButterGramDataHeader));
                 rows.add(Row.action(R.string.ButterGramResetSettings, R.drawable.msg_reset, ACTION_RESET));
                 rows.add(Row.shadow());
@@ -647,6 +706,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
                     ButterGramSupportSheet.openDonation(getParentActivity());
                 }
                 break;
+            case ACTION_CHANGES:
+                presentFragment(new ButterGramChangesActivity());
+                break;
             case ACTION_HOW_TO:
                 ButterGramSupportSheet.show(this, null, null);
                 break;
@@ -774,7 +836,11 @@ public class ButterGramSettingsActivity extends BaseFragment {
                     break;
                 }
                 case TYPE_ICON:
-                    ((TextCell) holder.itemView).setTextAndIcon(LocaleController.getString(row.title), row.icon, divider);
+                    if (row.icon == R.drawable.buttergram_keeper) {
+                        ((TextCell) holder.itemView).setTextAndIcon(LocaleController.getString(row.title), new CircleIcon(context, row.icon), divider);
+                    } else {
+                        ((TextCell) holder.itemView).setTextAndIcon(LocaleController.getString(row.title), row.icon, divider);
+                    }
                     break;
                 case TYPE_VALUE:
                     ((TextCell) holder.itemView).setTextAndValue(LocaleController.getString(row.title), row.intSetting != null ? currentChoiceLabel(row) : row.value, divider);
