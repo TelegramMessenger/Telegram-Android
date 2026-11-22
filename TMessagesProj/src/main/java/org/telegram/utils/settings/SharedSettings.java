@@ -106,6 +106,79 @@ public final class SharedSettings {
     public static final BooleanSetting buttergramLocalPremium =
         BooleanSetting.of("buttergram_local_premium", false);
 
+    public static final BooleanSetting buttergramHideFab =
+        BooleanSetting.of("buttergram_hide_fab", false);
+
+    public static final BooleanSetting buttergramHideSearch =
+        BooleanSetting.of("buttergram_hide_search", false);
+
+    public static final BooleanSetting buttergramCenterTitle =
+        BooleanSetting.of("buttergram_center_title", false);
+
+    public static final BooleanSetting buttergramNoTail =
+        BooleanSetting.of("buttergram_no_tail", false);
+
+    public static final BooleanSetting buttergramEditedIcon =
+        BooleanSetting.of("buttergram_edited_icon", false);
+
+    public static final BooleanSetting buttergramShowForwards =
+        BooleanSetting.of("buttergram_show_forwards", false);
+
+    public static final BooleanSetting buttergramHideSideShare =
+        BooleanSetting.of("buttergram_hide_side_share", false);
+
+    public static final BooleanSetting buttergramHideReactionsIn =
+        BooleanSetting.of("buttergram_hide_reactions_in", false);
+
+    public static final BooleanSetting buttergramHideReactionsOut =
+        BooleanSetting.of("buttergram_hide_reactions_out", false);
+
+    public static final BooleanSetting buttergramEndlessRecents =
+        BooleanSetting.of("buttergram_endless_recents", false);
+
+    public static final BooleanSetting buttergramForceSnow =
+        BooleanSetting.of("buttergram_force_snow", false);
+
+    public static final BooleanSetting buttergramHideMenuReply =
+        BooleanSetting.of("buttergram_hide_menu_reply", false);
+
+    public static final BooleanSetting buttergramHideMenuForward =
+        BooleanSetting.of("buttergram_hide_menu_forward", false);
+
+    public static final BooleanSetting buttergramHideMenuCopy =
+        BooleanSetting.of("buttergram_hide_menu_copy", false);
+
+    public static final BooleanSetting buttergramHideMenuCopyLink =
+        BooleanSetting.of("buttergram_hide_menu_copy_link", false);
+
+    public static final BooleanSetting buttergramHideMenuShare =
+        BooleanSetting.of("buttergram_hide_menu_share", false);
+
+    public static final BooleanSetting buttergramHideMenuReport =
+        BooleanSetting.of("buttergram_hide_menu_report", false);
+
+    public static final BooleanSetting buttergramHideMenuSave =
+        BooleanSetting.of("buttergram_hide_menu_save", false);
+
+    public static final BooleanSetting buttergramHideMenuTranslate =
+        BooleanSetting.of("buttergram_hide_menu_translate", false);
+
+    public static final BooleanSetting buttergramHideMenuPin =
+        BooleanSetting.of("buttergram_hide_menu_pin", false);
+
+    public static final StringSetting buttergramCustomTitle =
+        StringSetting.of("buttergram_custom_title", "");
+
+    public static final IntSetting buttergramAvatarRadius =
+        IntSetting.of("buttergram_avatar_radius", 100);
+
+    public static final IntSetting buttergramStickerScale =
+        IntSetting.of("buttergram_sticker_scale", 100);
+
+    // 0 reply, 1 forward, 2 copy text, 3 nothing
+    public static final IntSetting buttergramSwipeAction =
+        IntSetting.of("buttergram_swipe_action", 0);
+
     private SharedSettings() {
     }
 }

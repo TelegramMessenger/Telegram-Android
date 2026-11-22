@@ -247,4 +247,70 @@ public final class ButterGram {
         }
         return LocaleController.getString(R.string.ButterGramOfficialResource);
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // Interface options
+    // ---------------------------------------------------------------------------------------------
+
+    public static String listTitle() {
+        String t = SharedSettings.buttergramCustomTitle.get();
+        return t == null || t.trim().isEmpty() ? "ButterGram" : t.trim();
+    }
+
+    /** Scales an avatar corner radius: 100 = circle (unchanged), 0 = square. */
+    public static int avatarRadius(int radius) {
+        int p = SharedSettings.buttergramAvatarRadius.get();
+        if (p >= 100) {
+            return radius;
+        }
+        return Math.max(0, radius * Math.max(0, p) / 100);
+    }
+
+    public static float stickerScale() {
+        return Math.max(40, Math.min(200, SharedSettings.buttergramStickerScale.get())) / 100f;
+    }
+
+    public static boolean hideReactions(MessageObject message) {
+        if (message == null) {
+            return false;
+        }
+        return message.isOutOwner() ? SharedSettings.buttergramHideReactionsOut.get() : SharedSettings.buttergramHideReactionsIn.get();
+    }
+
+    public static int recentLimit(int serverLimit) {
+        return SharedSettings.buttergramEndlessRecents.get() ? 5000 : serverLimit;
+    }
+
+    /** Removes the items the user chose to hide from a message context menu. */
+    public static void filterMenu(List<?> items, List<Integer> options, List<Integer> icons) {
+        if (items == null || options == null || items.size() != options.size()) {
+            return;
+        }
+        for (int i = options.size() - 1; i >= 0; i--) {
+            if (isMenuOptionHidden(options.get(i))) {
+                items.remove(i);
+                options.remove(i);
+                if (icons != null && icons.size() > i) {
+                    icons.remove(i);
+                }
+            }
+        }
+    }
+
+    private static boolean isMenuOptionHidden(int option) {
+        switch (option) {
+            case 8: return SharedSettings.buttergramHideMenuReply.get();       // reply
+            case 2: return SharedSettings.buttergramHideMenuForward.get();     // forward
+            case 3: return SharedSettings.buttergramHideMenuCopy.get();        // copy
+            case 22: return SharedSettings.buttergramHideMenuCopyLink.get();   // copy link
+            case 6: return SharedSettings.buttergramHideMenuShare.get();       // share
+            case 23: return SharedSettings.buttergramHideMenuReport.get();     // report
+            case 4:
+            case 10: return SharedSettings.buttergramHideMenuSave.get();       // save
+            case 29: return SharedSettings.buttergramHideMenuTranslate.get();  // translate
+            case 13:
+            case 14: return SharedSettings.buttergramHideMenuPin.get();        // pin / unpin
+            default: return false;
+        }
+    }
 }

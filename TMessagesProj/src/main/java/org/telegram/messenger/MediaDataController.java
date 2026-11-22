@@ -1019,7 +1019,7 @@ public class MediaDataController extends BaseController {
                     }
                 });
             }
-            maxCount = getMessagesController().maxRecentStickersCount;
+            maxCount = ButterGram.recentLimit(getMessagesController().maxRecentStickersCount);
         }
         if (recentStickers[type].size() > maxCount || remove) {
             TLRPC.Document old = remove ? document : recentStickers[type].remove(recentStickers[type].size() - 1);
@@ -2094,7 +2094,7 @@ public class MediaDataController extends BaseController {
                         } else if (type == TYPE_FAVE) {
                             maxCount = getMessagesController().maxFaveStickersCount;
                         } else {
-                            maxCount = getMessagesController().maxRecentStickersCount;
+                            maxCount = ButterGram.recentLimit(getMessagesController().maxRecentStickersCount);
                         }
                     }
                     database.beginTransaction();

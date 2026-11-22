@@ -5138,7 +5138,7 @@ public class ChatActivity extends BaseFragment implements
                             fragment.setDelegate(ChatActivity.this);
                             presentFragment(fragment);
                         } else {
-                            showFieldPanelForReply(getSlidingMessageObject());
+                            buttergramSwipeAction(getSlidingMessageObject());
                         }
                     }
                     endTrackingX = slidingViewGetOffsetX();
@@ -31958,6 +31958,7 @@ public class ChatActivity extends BaseFragment implements
                 icons.add(R.drawable.msg_calendar2);
             }
 
+            org.telegram.messenger.ButterGram.filterMenu(items, options, icons);
             if (options.isEmpty() && optionsView == null) {
                 return false;
             }
@@ -34312,6 +34313,35 @@ public class ChatActivity extends BaseFragment implements
         builder.setMessage(sb.toString());
         builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
         showDialog(builder.create());
+    }
+
+    /** ButterGram: what a swipe on a message does (reply by default). */
+    private void buttergramSwipeAction(MessageObject message) {
+        if (message == null) {
+            return;
+        }
+        switch (org.telegram.utils.settings.SharedSettings.buttergramSwipeAction.get()) {
+            case 1:
+                selectedObject = message;
+                processSelectedOption(OPTION_FORWARD);
+                break;
+            case 2: {
+                CharSequence text = message.messageText;
+                if (message.caption != null) {
+                    text = message.caption;
+                }
+                if (text != null && text.length() > 0) {
+                    AndroidUtilities.addToClipboard(text);
+                    BulletinFactory.of(this).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+                }
+                break;
+            }
+            case 3:
+                break;
+            default:
+                showFieldPanelForReply(message);
+                break;
+        }
     }
 
     private void processSelectedOption(int option) {

@@ -1,6 +1,8 @@
 package org.telegram.ui;
 
 import android.content.Context;
+import android.text.InputType;
+import android.widget.EditText;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -32,6 +34,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.utils.settings.BooleanSetting;
+import org.telegram.utils.settings.IntSetting;
 import org.telegram.utils.settings.SharedSettings;
 
 import java.util.ArrayList;
@@ -46,6 +49,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
     public static final int PAGE_APPEARANCE = 2;
     public static final int PAGE_CHATS = 3;
     public static final int PAGE_OTHER = 4;
+    public static final int PAGE_MENU = 5;
 
     private static final String USERNAME_CHANNEL = "ButterGramClient";
     private static final String USERNAME_CHAT = "ButterGramChat";
@@ -66,6 +70,8 @@ public class ButterGramSettingsActivity extends BaseFragment {
     private static final int ACTION_OPEN_THEMES = 4;
     private static final int ACTION_OPEN_USERNAME = 5;
     private static final int ACTION_PICK_COLOR = 6;
+    private static final int ACTION_CHOICE = 7;
+    private static final int ACTION_EDIT_TITLE = 8;
 
     private static final int[] DELETED_COLORS = {
         0xFFE53935, 0xFFFB8C00, 0xFFFDD835, 0xFF43A047, 0xFF1E88E5, 0xFF8E24AA, 0xFF9E9E9E, 0xFFFFFFFF
@@ -84,6 +90,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
         final int page;
         final String url;
         final BooleanSetting setting;
+        IntSetting intSetting;
+        int[] choiceValues;
+        String[] choiceLabels;
 
         Row(int type, int title, int icon, String value, int action, int page, String url, BooleanSetting setting) {
             this.type = type;
@@ -136,6 +145,18 @@ public class ButterGramSettingsActivity extends BaseFragment {
             return new Row(TYPE_VALUE, title, 0, value, ACTION_PICK_COLOR, 0, null, null);
         }
 
+        static Row choice(int title, IntSetting setting, int[] values, String[] labels) {
+            Row r = new Row(TYPE_VALUE, title, 0, null, ACTION_CHOICE, 0, null, null);
+            r.intSetting = setting;
+            r.choiceValues = values;
+            r.choiceLabels = labels;
+            return r;
+        }
+
+        static Row editTitle(int title, String value) {
+            return new Row(TYPE_VALUE, title, 0, value, ACTION_EDIT_TITLE, 0, null, null);
+        }
+
         static Row plainValue(int title, String value) {
             return new Row(TYPE_VALUE, title, 0, value, ACTION_NONE, 0, null, null);
         }
@@ -170,6 +191,8 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 return R.string.ButterGramChats;
             case PAGE_OTHER:
                 return R.string.ButterGramOther;
+            case PAGE_MENU:
+                return R.string.ButterGramMenuTitle;
             default:
                 return R.string.ButterGramSettings;
         }
@@ -183,6 +206,87 @@ public class ButterGramSettingsActivity extends BaseFragment {
             }
         }
         return String.format("#%06X", current & 0xFFFFFF);
+    }
+
+    private static final int[] PERCENT_AVATAR = {0, 25, 50, 75, 100};
+    private static final int[] PERCENT_STICKER = {70, 85, 100, 120, 140};
+
+    private String[] percentLabels(int[] values) {
+        String[] out = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            out[i] = values[i] + "%";
+        }
+        return out;
+    }
+
+    private String[] avatarLabels() {
+        return new String[]{
+            LocaleController.getString(R.string.ButterGramShapeSquare), "25%", "50%", "75%", LocaleController.getString(R.string.ButterGramShapeCircle)
+        };
+    }
+
+    private String[] swipeLabels() {
+        return new String[]{
+            LocaleController.getString(R.string.ButterGramSwipeReply), LocaleController.getString(R.string.ButterGramSwipeForward),
+            LocaleController.getString(R.string.ButterGramSwipeCopy), LocaleController.getString(R.string.ButterGramSwipeNothing)
+        };
+    }
+
+    private void showChoiceDialog(Row row) {
+        if (getParentActivity() == null || row.intSetting == null) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(LocaleController.getString(row.title));
+        CharSequence[] labels = new CharSequence[row.choiceLabels.length];
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = row.choiceLabels[i];
+        }
+        builder.setItems(labels, (dialog, which) -> {
+            row.intSetting.set(row.choiceValues[which]);
+            buildRows();
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
+    }
+
+    private void showTitleDialog() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(LocaleController.getString(R.string.ButterGramTitleText));
+        final EditText input = new EditText(getParentActivity());
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setHint("ButterGram");
+        input.setText(SharedSettings.buttergramCustomTitle.get());
+        input.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        input.setHintTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+        input.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(12), AndroidUtilities.dp(24), AndroidUtilities.dp(12));
+        builder.setView(input);
+        builder.setPositiveButton(LocaleController.getString(R.string.OK), (dialog, which) -> {
+            SharedSettings.buttergramCustomTitle.set(input.getText().toString().trim());
+            buildRows();
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
+    }
+
+    private String currentChoiceLabel(Row r) {
+        int cur = r.intSetting.get();
+        for (int i = 0; i < r.choiceValues.length; i++) {
+            if (r.choiceValues[i] == cur) {
+                return r.choiceLabels[i];
+            }
+        }
+        return String.valueOf(cur);
     }
 
     private void buildRows() {
@@ -213,7 +317,18 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.check(R.string.ButterGramHideStories, SharedSettings.buttergramHideStories));
                 rows.add(Row.check(R.string.ButterGramBigFont, SharedSettings.buttergramBigFont));
                 rows.add(Row.themes(R.string.ButterGramThemeSettings, R.drawable.msg_theme));
+                rows.add(Row.check(R.string.ButterGramForceSnow, SharedSettings.buttergramForceSnow));
                 rows.add(Row.info(R.string.ButterGramAppearanceInfo));
+                rows.add(Row.header(R.string.ButterGramListHeader));
+                rows.add(Row.editTitle(R.string.ButterGramTitleText, SharedSettings.buttergramCustomTitle.get() == null || SharedSettings.buttergramCustomTitle.get().isEmpty() ? "ButterGram" : SharedSettings.buttergramCustomTitle.get()));
+                rows.add(Row.check(R.string.ButterGramCenterTitle, SharedSettings.buttergramCenterTitle));
+                rows.add(Row.check(R.string.ButterGramHideFab, SharedSettings.buttergramHideFab));
+                rows.add(Row.check(R.string.ButterGramHideSearch, SharedSettings.buttergramHideSearch));
+                rows.add(Row.info(R.string.ButterGramListInfo));
+                rows.add(Row.header(R.string.ButterGramShapesHeader));
+                rows.add(Row.choice(R.string.ButterGramAvatarRadius, SharedSettings.buttergramAvatarRadius, PERCENT_AVATAR, avatarLabels()));
+                rows.add(Row.choice(R.string.ButterGramStickerSize, SharedSettings.buttergramStickerScale, PERCENT_STICKER, percentLabels(PERCENT_STICKER)));
+                rows.add(Row.info(R.string.ButterGramShapesInfo));
                 break;
             case PAGE_CHATS:
                 rows.add(Row.header(R.string.ButterGramMessages));
@@ -226,6 +341,32 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.check(R.string.ButterGramShowIds, SharedSettings.buttergramShowIds));
                 rows.add(Row.check(R.string.ButterGramEditHistorySetting, SharedSettings.buttergramEditHistory));
                 rows.add(Row.info(R.string.ButterGramEditHistoryInfo));
+                rows.add(Row.header(R.string.ButterGramBubblesHeader));
+                rows.add(Row.check(R.string.ButterGramNoTail, SharedSettings.buttergramNoTail));
+                rows.add(Row.check(R.string.ButterGramEditedIcon, SharedSettings.buttergramEditedIcon));
+                rows.add(Row.check(R.string.ButterGramShowForwards, SharedSettings.buttergramShowForwards));
+                rows.add(Row.check(R.string.ButterGramHideSideShare, SharedSettings.buttergramHideSideShare));
+                rows.add(Row.check(R.string.ButterGramHideReactionsIn, SharedSettings.buttergramHideReactionsIn));
+                rows.add(Row.check(R.string.ButterGramHideReactionsOut, SharedSettings.buttergramHideReactionsOut));
+                rows.add(Row.info(R.string.ButterGramBubblesInfo));
+                rows.add(Row.header(R.string.ButterGramGesturesHeader));
+                rows.add(Row.choice(R.string.ButterGramSwipeAction, SharedSettings.buttergramSwipeAction, new int[]{0, 1, 2, 3}, swipeLabels()));
+                rows.add(Row.category(R.string.ButterGramMenuTitle, R.drawable.msg_list, PAGE_MENU));
+                rows.add(Row.check(R.string.ButterGramEndlessRecents, SharedSettings.buttergramEndlessRecents));
+                rows.add(Row.info(R.string.ButterGramGesturesInfo));
+                break;
+            case PAGE_MENU:
+                rows.add(Row.header(R.string.ButterGramMenuHeader));
+                rows.add(Row.check(R.string.ButterGramMenuReply, SharedSettings.buttergramHideMenuReply));
+                rows.add(Row.check(R.string.ButterGramMenuForward, SharedSettings.buttergramHideMenuForward));
+                rows.add(Row.check(R.string.ButterGramMenuCopy, SharedSettings.buttergramHideMenuCopy));
+                rows.add(Row.check(R.string.ButterGramMenuCopyLink, SharedSettings.buttergramHideMenuCopyLink));
+                rows.add(Row.check(R.string.ButterGramMenuShare, SharedSettings.buttergramHideMenuShare));
+                rows.add(Row.check(R.string.ButterGramMenuSave, SharedSettings.buttergramHideMenuSave));
+                rows.add(Row.check(R.string.ButterGramMenuTranslate, SharedSettings.buttergramHideMenuTranslate));
+                rows.add(Row.check(R.string.ButterGramMenuPin, SharedSettings.buttergramHideMenuPin));
+                rows.add(Row.check(R.string.ButterGramMenuReport, SharedSettings.buttergramHideMenuReport));
+                rows.add(Row.info(R.string.ButterGramMenuInfo));
                 break;
             case PAGE_OTHER:
                 rows.add(Row.header(R.string.ButterGramAbout));
@@ -341,6 +482,12 @@ public class ButterGramSettingsActivity extends BaseFragment {
             case ACTION_PICK_COLOR:
                 showColorDialog();
                 break;
+            case ACTION_CHOICE:
+                showChoiceDialog(row);
+                break;
+            case ACTION_EDIT_TITLE:
+                showTitleDialog();
+                break;
             case ACTION_OPEN_THEMES:
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
                 break;
@@ -450,7 +597,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                     ((TextCell) holder.itemView).setTextAndIcon(LocaleController.getString(row.title), row.icon, divider);
                     break;
                 case TYPE_VALUE:
-                    ((TextCell) holder.itemView).setTextAndValue(LocaleController.getString(row.title), row.value, divider);
+                    ((TextCell) holder.itemView).setTextAndValue(LocaleController.getString(row.title), row.intSetting != null ? currentChoiceLabel(row) : row.value, divider);
                     break;
                 case TYPE_INFO:
                     ((TextInfoPrivacyCell) holder.itemView).setText(LocaleController.getString(row.title));

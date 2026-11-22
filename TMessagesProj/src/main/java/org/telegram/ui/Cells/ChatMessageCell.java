@@ -101,6 +101,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
+import org.telegram.utils.settings.SharedSettings;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -1854,7 +1855,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         backgroundDrawable = new MessageBackgroundDrawable(this);
         avatarImage = new ImageReceiver();
         avatarImage.setAllowLoadingOnAttachedOnly(true);
-        avatarImage.setRoundRadius(dp(21));
+        avatarImage.setRoundRadius(org.telegram.messenger.ButterGram.avatarRadius(dp(21)));
         avatarDrawable = new AvatarDrawable();
         replyImageReceiver = new ImageReceiver(this);
         replyImageReceiver.setAllowLoadingOnAttachedOnly(true);
@@ -6387,10 +6388,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             if (currentMessagesGroup == null || currentMessagesGroup.isDocuments) {
                 drawPinnedTop = pinnedTop;
-                drawPinnedBottom = pinnedBottom;
+                drawPinnedBottom = pinnedBottom || SharedSettings.buttergramNoTail.get();
             } else {
                 drawPinnedTop = pinnedTop && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0);
-                drawPinnedBottom = pinnedBottom && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0);
+                drawPinnedBottom = (pinnedBottom || SharedSettings.buttergramNoTail.get()) && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0);
             }
 
             boolean wasPlayingRound = isPlayingRound;
@@ -8998,6 +8999,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         maxHeight = maxWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.4f);
                     } else {
                         maxHeight = maxWidth = (int) (Math.min(getParentWidth(), AndroidUtilities.displaySize.y) * 0.5f);
+                    }
+                    if (!messageObject.isAnimatedEmoji() && !messageObject.isDice()) {
+                        maxHeight = maxWidth = (int) (maxWidth * org.telegram.messenger.ButterGram.stickerScale());
                     }
                     String filter;
                     if (messageObject.isAnimatedEmoji() || messageObject.isDice()) {
@@ -15575,6 +15579,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 return LocaleController.formatPmEditedDate(editDate);
             }
+            if (SharedSettings.buttergramEditedIcon.get()) {
+                return "\u270E " + org.telegram.messenger.ButterGram.formatTime((long) (message.messageOwner.date));
+            }
             return getString(R.string.EditedMessage) + " " + org.telegram.messenger.ButterGram.formatTime((long) (message.messageOwner.date));
         } else if (current.isSaved && current.messageOwner.fwd_from != null && (current.messageOwner.fwd_from.date != 0 || current.messageOwner.fwd_from.saved_date != 0)
                 // A widget keeps its time alone in Saved Messages: the pill over its corner stays short.
@@ -15722,6 +15729,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         final boolean isInWelcomeMessages = delegate != null && delegate.getChatMode() == ChatActivity.MODE_WELCOME_MESSAGES;
         if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0 && !isInWelcomeMessages) {
             currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
+            if (SharedSettings.buttergramShowForwards.get() && messageObject.messageOwner.forwards > 0) {
+                currentViewsString = currentViewsString + "  \u2197" + LocaleController.formatShortNumber(messageObject.messageOwner.forwards, null);
+            }
             viewsTextWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentViewsString));
             float drawableWidth = Theme.chat_msgInViewsDrawable.getIntrinsicWidth() * (Theme.chat_timePaint.getTextSize() - dp(2)) / Theme.chat_msgInViewsDrawable.getIntrinsicHeight();
             timeWidth += viewsTextWidth + drawableWidth + dp(10);
@@ -15844,6 +15854,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     protected boolean checkNeedDrawShareButton(MessageObject messageObject) {
         if (isReportChat) return false;
+        if (SharedSettings.buttergramHideSideShare.get()) return false;
         if (currentMessageObject.deleted && !currentMessageObject.deletedByThanos) return false;
         if (currentMessageObject.isSponsored()) return false;
         if (currentMessageObject.isEphemeral()) return false;
