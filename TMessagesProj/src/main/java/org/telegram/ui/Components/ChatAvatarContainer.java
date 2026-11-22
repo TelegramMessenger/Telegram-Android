@@ -941,16 +941,16 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     }
 
     /** ButterGram: true if the chat shown in the header is one of ButterGram's official resources. */
-    private boolean buttergramOfficial() {
+    private android.graphics.drawable.Drawable buttergramBadgeDrawable() {
         if (parentFragment == null) {
-            return false;
+            return null;
         }
         TLRPC.User u = parentFragment.getCurrentUser();
         if (u != null) {
-            return org.telegram.messenger.ButterGram.officialKind(true, u.id) != 0;
+            return org.telegram.messenger.ButterGram.badgeFor(true, u.id);
         }
         TLRPC.Chat c = parentFragment.getCurrentChat();
-        return c != null && org.telegram.messenger.ButterGram.officialKind(false, c.id) != 0;
+        return c != null ? org.telegram.messenger.ButterGram.badgeFor(false, c.id) : null;
     }
 
     public void setTitle(CharSequence value, boolean scam, boolean fake, boolean verified, boolean premium, TLRPC.EmojiStatus emojiStatus, boolean animated) {
@@ -969,8 +969,8 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                 rightDrawable2ContentDescription = getString(R.string.ScamMessage);
                 rightDrawableIsScamOrVerified = true;
             }
-        } else if (buttergramOfficial()) {
-            titleTextView.setRightDrawable2(org.telegram.messenger.ButterGram.badge());
+        } else if (buttergramBadgeDrawable() != null) {
+            titleTextView.setRightDrawable2(buttergramBadgeDrawable());
             rightDrawableIsScamOrVerified = true;
             rightDrawable2ContentDescription = null;
         } else if (verified) {

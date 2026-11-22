@@ -11832,12 +11832,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (user.self && getMessagesController().isPremiumUser(user)) {
                     nameTextView.setRightDrawableOnClick(v -> {
+                        if (org.telegram.ui.Components.ButterGramSupportSheet.showIfSupporter(ProfileActivity.this, user)) {
+                            return;
+                        }
                         showStatusSelect();
                     });
                 }
                 if (!user.self && getMessagesController().isPremiumUser(user)) {
                     final SimpleTextView textView = nameTextView;
                     nameTextView.setRightDrawableOnClick(v -> {
+                        if (org.telegram.ui.Components.ButterGramSupportSheet.showIfSupporter(ProfileActivity.this, user)) {
+                            return;
+                        }
                         if (user.emoji_status instanceof TLRPC.TL_emojiStatusCollectible) {
                             TLRPC.TL_emojiStatusCollectible status = (TLRPC.TL_emojiStatusCollectible) user.emoji_status;
                             if (status != null) {
@@ -12182,10 +12188,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         final TLRPC.User user = isUser ? getMessagesController().getUser(userId) : null;
+        final android.graphics.drawable.Drawable badge = org.telegram.messenger.ButterGram.badgeFor(isUser, id);
+        if (badge == null) {
+            return; // supporters with a custom emoji get it as an emoji status
+        }
         nameTextView.setRightDrawableOutside(true);
-        nameTextView.setRightDrawable(org.telegram.messenger.ButterGram.badge());
+        nameTextView.setRightDrawable(badge);
         nameTextViewRightDrawableContentDescription = org.telegram.messenger.ButterGram.officialText(kind, user);
         nameTextView.setRightDrawableOnClick(v -> {
+            if (kind == org.telegram.messenger.ButterGram.OFFICIAL_SUPPORTER) {
+                org.telegram.ui.Components.ButterGramSupportSheet.showIfSupporter(ProfileActivity.this, user);
+                return;
+            }
             BulletinFactory.of(ProfileActivity.this).createSimpleBulletin(R.raw.info, org.telegram.messenger.ButterGram.officialText(kind, user)).show();
         });
     }

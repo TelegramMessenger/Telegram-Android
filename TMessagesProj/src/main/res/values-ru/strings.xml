@@ -370,4 +370,25 @@
     <string name="ButterGramPreviewChat">Чат</string>
     <string name="ButterGramPreviewText">Привет! Вот как это выглядит</string>
     <string name="ButterGramPreviewHint">Предпросмотр обновляется при изменении настроек</string>
+    <string name="ButterGramSupportHeader">Поддержка</string>
+    <string name="ButterGramTonkeeper">Tonkeeper</string>
+    <string name="ButterGramHowToGet">Как получить значок</string>
+    <string name="ButterGramSupportInfo">Поддержите разработку и получите уникальный значок! Значок виден только внутри ButterGram.</string>
+    <string name="ButterGramDataHeader">Данные</string>
+    <string name="ButterGramResetSettings">Сбросить настройки</string>
+    <string name="ButterGramResetConfirm">Сбросить все настройки ButterGram до значений по умолчанию?</string>
+    <string name="ButterGramResetDone">Настройки сброшены. Перезапусти приложение, чтобы всё применилось.</string>
+    <string name="ButterGramSheetTitle">%1$s поддерживает ButterGram</string>
+    <string name="ButterGramSheetTitleGeneric">Поддержи ButterGram</string>
+    <string name="ButterGramSheetGet">Поддержавшие получают:</string>
+    <string name="ButterGramFeature1Title">Значок поддержавшего</string>
+    <string name="ButterGramFeature1Text">Сердечко рядом с именем, его видят все в ButterGram. 1 GRAM.</string>
+    <string name="ButterGramFeature2Title">Свой значок</string>
+    <string name="ButterGramFeature2Text">Любое эмодзи и свой текст вместо стандартного значка. 4 GRAM.</string>
+    <string name="ButterGramFeature3Title">Помощь разработке</string>
+    <string name="ButterGramFeature3Text">Пожертвования добровольные и идут разработчику ButterGram.</string>
+    <string name="ButterGramSheetHow">Как получить</string>
+    <string name="ButterGramSheetDonate">Сделать пожертвование</string>
+    <string name="ButterGramCopyAddress">Скопировать адрес</string>
+    <string name="ButterGramHowText">1. Отправь 1 GRAM на адрес ниже, например через Tonkeeper.\n2. Пришли скриншот перевода в @%1$s, и ты получишь значок поддержавшего.\n\nЗа 4 GRAM можно получить свой значок: пришли ID эмодзи и текст, и твой значок заменится на них.\n\nЗначок виден только внутри ButterGram.\n\nАдрес:\n%2$s</string>
 </resources>

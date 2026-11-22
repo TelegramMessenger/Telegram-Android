@@ -33,4 +33,13 @@ public final class IntSetting {
         loaded = true;
         SettingsPreferences.get().edit().putInt(name, value).apply();
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public synchronized void reset() {
+        SettingsPreferences.get().edit().remove(name).apply();
+        loaded = false;
+    }
 }

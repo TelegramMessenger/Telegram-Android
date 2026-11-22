@@ -31,7 +31,9 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ButterGramPreviewView;
+import org.telegram.ui.Components.ButterGramSupportSheet;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -77,6 +79,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
     private static final int ACTION_PICK_COLOR = 6;
     private static final int ACTION_CHOICE = 7;
     private static final int ACTION_EDIT_TITLE = 8;
+    private static final int ACTION_TONKEEPER = 9;
+    private static final int ACTION_HOW_TO = 10;
+    private static final int ACTION_RESET = 11;
 
     private static final int[] DELETED_COLORS = {
         0xFFE53935, 0xFFFB8C00, 0xFFFDD835, 0xFF43A047, 0xFF1E88E5, 0xFF8E24AA, 0xFF9E9E9E, 0xFFFFFFFF
@@ -171,6 +176,10 @@ public class ButterGramSettingsActivity extends BaseFragment {
             r.choiceValues = values;
             r.choiceLabels = labels;
             return r;
+        }
+
+        static Row action(int title, int icon, int action) {
+            return new Row(TYPE_ICON, title, icon, null, action, 0, null, null);
         }
 
         static Row editTitle(int title, String value) {
@@ -360,6 +369,27 @@ public class ButterGramSettingsActivity extends BaseFragment {
         showDialog(builder.create());
     }
 
+    private void showResetDialog() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(LocaleController.getString(R.string.ButterGramResetSettings));
+        builder.setMessage(LocaleController.getString(R.string.ButterGramResetConfirm));
+        builder.setPositiveButton(LocaleController.getString(R.string.ButterGramResetSettings), (dialog, which) -> {
+            org.telegram.messenger.ButterGram.resetAll();
+            buildRows();
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+            if (getParentActivity() != null) {
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.info, LocaleController.getString(R.string.ButterGramResetDone)).show();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
+    }
+
     private void showTitleDialog() {
         if (getParentActivity() == null) {
             return;
@@ -483,6 +513,13 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.info(R.string.ButterGramMenuInfo));
                 break;
             case PAGE_OTHER:
+                rows.add(Row.header(R.string.ButterGramSupportHeader));
+                rows.add(Row.action(R.string.ButterGramTonkeeper, R.drawable.buttergram_tonkeeper, ACTION_TONKEEPER));
+                rows.add(Row.action(R.string.ButterGramHowToGet, R.drawable.msg_premium_badge, ACTION_HOW_TO));
+                rows.add(Row.info(R.string.ButterGramSupportInfo));
+                rows.add(Row.header(R.string.ButterGramDataHeader));
+                rows.add(Row.action(R.string.ButterGramResetSettings, R.drawable.msg_reset, ACTION_RESET));
+                rows.add(Row.shadow());
                 rows.add(Row.header(R.string.ButterGramAbout));
                 rows.add(Row.plainValue(R.string.ButterGramVersion, BuildVars.BUILD_VERSION_STRING));
                 rows.add(Row.link(R.string.ButterGramLicense, "GPLv2", URL_LICENSE));
@@ -602,6 +639,17 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 break;
             case ACTION_EDIT_TITLE:
                 showTitleDialog();
+                break;
+            case ACTION_TONKEEPER:
+                if (getParentActivity() != null) {
+                    ButterGramSupportSheet.openDonation(getParentActivity());
+                }
+                break;
+            case ACTION_HOW_TO:
+                ButterGramSupportSheet.show(this, null, null);
+                break;
+            case ACTION_RESET:
+                showResetDialog();
                 break;
             case ACTION_OPEN_THEMES:
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));

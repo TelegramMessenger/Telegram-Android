@@ -212,6 +212,7 @@ public final class ButterGram {
     public static final int OFFICIAL_NONE = 0;
     public static final int OFFICIAL_RESOURCE = 1;
     public static final int OFFICIAL_TEAM = 2;
+    public static final int OFFICIAL_SUPPORTER = 3;
 
     private static final long[] OFFICIAL_CHANNELS = {4392732376L, 4372744306L};
     private static final long[] TEAM_USERS = {5074845818L};
@@ -223,7 +224,66 @@ public final class ButterGram {
                 return user ? OFFICIAL_TEAM : OFFICIAL_RESOURCE;
             }
         }
+        if (user && ButterGramSupporters.get(id) != null) {
+            return OFFICIAL_SUPPORTER;
+        }
         return OFFICIAL_NONE;
+    }
+
+    /**
+     * The badge to draw next to a name, or null. Supporters with a custom emoji get it as an emoji status instead
+     * (see applySupporter), so no extra badge is drawn for them.
+     */
+    public static android.graphics.drawable.Drawable badgeFor(boolean user, long id) {
+        int kind = officialKind(user, id);
+        if (kind == OFFICIAL_NONE) {
+            return null;
+        }
+        if (kind == OFFICIAL_SUPPORTER) {
+            ButterGramSupporters.Entry e = ButterGramSupporters.get(id);
+            if (e == null || e.emoji != 0) {
+                return null;
+            }
+            android.graphics.drawable.Drawable d = androidx.core.content.ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.buttergram_supporter);
+            return d != null ? d.mutate() : null;
+        }
+        return badge();
+    }
+
+    /** Supporters who paid for a custom badge get their emoji as a local emoji status (shown only in ButterGram). */
+    public static void applySupporter(TLRPC.User user) {
+        if (user == null || user.id == 0) {
+            return;
+        }
+        ButterGramSupporters.Entry e = ButterGramSupporters.get(user.id);
+        if (e == null || e.emoji == 0) {
+            return;
+        }
+        TLRPC.TL_emojiStatus status = new TLRPC.TL_emojiStatus();
+        status.document_id = e.emoji;
+        user.emoji_status = status;
+        user.premium = true;
+    }
+
+    /** Puts every ButterGram setting back to its default value. */
+    public static void resetAll() {
+        for (java.lang.reflect.Field f : SharedSettings.class.getDeclaredFields()) {
+            try {
+                if (!java.lang.reflect.Modifier.isStatic(f.getModifiers())) {
+                    continue;
+                }
+                Object v = f.get(null);
+                if (v instanceof org.telegram.utils.settings.BooleanSetting && ((org.telegram.utils.settings.BooleanSetting) v).getName().startsWith("buttergram_")) {
+                    ((org.telegram.utils.settings.BooleanSetting) v).reset();
+                } else if (v instanceof org.telegram.utils.settings.IntSetting && ((org.telegram.utils.settings.IntSetting) v).getName().startsWith("buttergram_")) {
+                    ((org.telegram.utils.settings.IntSetting) v).reset();
+                } else if (v instanceof org.telegram.utils.settings.StringSetting && ((org.telegram.utils.settings.StringSetting) v).getName().startsWith("buttergram_")) {
+                    ((org.telegram.utils.settings.StringSetting) v).reset();
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
     }
 
     public static android.graphics.drawable.Drawable badge() {

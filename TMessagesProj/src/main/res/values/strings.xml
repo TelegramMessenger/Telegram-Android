@@ -11786,4 +11786,25 @@
     <string name="ButterGramPreviewChat">Chat</string>
     <string name="ButterGramPreviewText">Hi! This is how it looks</string>
     <string name="ButterGramPreviewHint">Preview updates as you change options</string>
+    <string name="ButterGramSupportHeader">Support</string>
+    <string name="ButterGramTonkeeper">Tonkeeper</string>
+    <string name="ButterGramHowToGet">How to get a badge</string>
+    <string name="ButterGramSupportInfo">Support the development and get a unique badge! The badge is visible only inside ButterGram.</string>
+    <string name="ButterGramDataHeader">Data</string>
+    <string name="ButterGramResetSettings">Reset settings</string>
+    <string name="ButterGramResetConfirm">Reset all ButterGram settings to their defaults?</string>
+    <string name="ButterGramResetDone">Settings reset. Restart the app to apply everything.</string>
+    <string name="ButterGramSheetTitle">%1$s supports ButterGram</string>
+    <string name="ButterGramSheetTitleGeneric">Support ButterGram</string>
+    <string name="ButterGramSheetGet">Supporters get:</string>
+    <string name="ButterGramFeature1Title">Supporter badge</string>
+    <string name="ButterGramFeature1Text">A heart next to your name that everyone in ButterGram sees. 1 GRAM.</string>
+    <string name="ButterGramFeature2Title">Your own badge</string>
+    <string name="ButterGramFeature2Text">Any emoji and your own text instead of the standard badge. 4 GRAM.</string>
+    <string name="ButterGramFeature3Title">Helping development</string>
+    <string name="ButterGramFeature3Text">Donations are voluntary and go to the ButterGram developer.</string>
+    <string name="ButterGramSheetHow">How to get</string>
+    <string name="ButterGramSheetDonate">Make a donation</string>
+    <string name="ButterGramCopyAddress">Copy address</string>
+    <string name="ButterGramHowText">1. Send 1 GRAM to the address below, for example with Tonkeeper.\n2. Send a screenshot of the transfer to @%1$s and you get the supporter badge.\n\nFor 4 GRAM you get your own badge: send the custom emoji ID and the text, and your badge is replaced with them.\n\nThe badge is visible only inside ButterGram.\n\nAddress:\n%2$s</string>
 </resources>

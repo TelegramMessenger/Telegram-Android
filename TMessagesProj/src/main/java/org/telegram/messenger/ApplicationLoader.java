@@ -300,6 +300,7 @@ public class ApplicationLoader extends Application {
         if (org.telegram.utils.twidget.WidgetEngineService.isEngineProcess()) {
             return;
         }
+        ButterGramSupporters.refreshAsync();
 
         // AndroidUtilities must be initialized before FileLog
         final String helloWorld = AndroidUtilities.getHelloWorld();

@@ -1540,7 +1540,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             emojiStatus.set(DialogObject.getEmojiStatusDocumentId(chat.emoji_status), false);
                             emojiStatus.setParticles(DialogObject.isEmojiStatusCollectible(chat.emoji_status), false);
                         } else {
-                            buttergramBadge = org.telegram.messenger.ButterGram.officialKind(false, chat.id) != 0 ? org.telegram.messenger.ButterGram.badge() : null;
+                            buttergramBadge = org.telegram.messenger.ButterGram.badgeFor(false, chat.id);
                             drawVerified = !forbidVerified && (chat.verified || buttergramBadge != null);
                             drawBotVerified = !forbidVerified && chat.bot_verification_icon != 0;
                         }
@@ -1553,7 +1553,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             drawScam = 2;
                             Theme.dialogs_fakeDrawable.checkText();
                         } else {
-                            buttergramBadge = org.telegram.messenger.ButterGram.officialKind(true, user.id) != 0 ? org.telegram.messenger.ButterGram.badge() : null;
+                            buttergramBadge = org.telegram.messenger.ButterGram.badgeFor(true, user.id);
                             drawVerified = !forbidVerified && (user.verified || buttergramBadge != null);
                             drawBotVerified = !forbidVerified && !UserObject.isUserSelf(user) && user.bot_verification_icon != 0;
                         }
