@@ -50,9 +50,15 @@ public final class ButterGram {
         }
     }
 
+    /** Id of the fake messages used by the settings previews. */
+    public static final int PREVIEW_MESSAGE_ID = -7777;
+
     public static boolean isDeleted(MessageObject message) {
         if (message == null || message.messageOwner == null || !SharedSettings.buttergramMarkDeleted.get()) {
             return false;
+        }
+        if (message.messageOwner.id == PREVIEW_MESSAGE_ID) {
+            return true;
         }
         try {
             long channelId = message.messageOwner.peer_id != null ? message.messageOwner.peer_id.channel_id : 0;

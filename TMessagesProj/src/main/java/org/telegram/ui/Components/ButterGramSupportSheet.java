@@ -16,6 +16,9 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
+import org.telegram.messenger.UserConfig;
+import android.graphics.drawable.Drawable;
+import android.graphics.Canvas;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -105,10 +108,7 @@ public final class ButterGramSupportSheet {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(24), dp(20), dp(24), dp(16));
 
-        ImageView logo = new ImageView(context);
-        logo.setImageResource(R.drawable.buttergram_logo);
-        logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        content.addView(logo, LayoutHelper.createLinear(110, 110, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 12));
+        content.addView(new BadgeView(context, entry != null ? entry.emoji : 0), LayoutHelper.createLinear(110, 110, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 12));
 
         CharSequence title;
         if (user != null) {
@@ -183,5 +183,44 @@ public final class ButterGramSupportSheet {
         });
         builder.setNegativeButton(LocaleController.getString(R.string.Close), null);
         fragment.showDialog(builder.create());
+    }
+
+    /** Big supporter badge, or the supporter's custom emoji when one is set. */
+    private static class BadgeView extends View {
+        private final Drawable drawable;
+        private final AnimatedEmojiDrawable emojiDrawable;
+
+        BadgeView(Context context, long documentId) {
+            super(context);
+            if (documentId != 0) {
+                emojiDrawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, documentId);
+                drawable = emojiDrawable;
+            } else {
+                emojiDrawable = null;
+                drawable = context.getResources().getDrawable(R.drawable.buttergram_supporter).mutate();
+            }
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            if (emojiDrawable != null) {
+                emojiDrawable.addView(this);
+            }
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            if (emojiDrawable != null) {
+                emojiDrawable.removeView(this);
+            }
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            drawable.setBounds(0, 0, getWidth(), getHeight());
+            drawable.draw(canvas);
+        }
     }
 }

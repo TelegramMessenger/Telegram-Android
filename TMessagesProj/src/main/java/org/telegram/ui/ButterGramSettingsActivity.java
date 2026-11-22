@@ -270,6 +270,8 @@ public class ButterGramSettingsActivity extends BaseFragment {
             View child = listView.getChildAt(i);
             if (child instanceof ButterGramPreviewView) {
                 child.invalidate();
+            } else if (child instanceof org.telegram.ui.Cells.ButterGramMessagesPreviewCell) {
+                ((org.telegram.ui.Cells.ButterGramMessagesPreviewCell) child).refresh();
             }
         }
     }
@@ -716,7 +718,14 @@ public class ButterGramSettingsActivity extends BaseFragment {
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view;
             if (viewType >= PREVIEW_BASE) {
-                view = new ButterGramPreviewView(context, viewType - PREVIEW_BASE);
+                int kind = viewType - PREVIEW_BASE;
+                if (kind == ButterGramPreviewView.KIND_BUBBLE) {
+                    view = new org.telegram.ui.Cells.ButterGramMessagesPreviewCell(context, org.telegram.ui.Cells.ButterGramMessagesPreviewCell.MODE_BUBBLES);
+                } else if (kind == ButterGramPreviewView.KIND_STICKER) {
+                    view = new org.telegram.ui.Cells.ButterGramMessagesPreviewCell(context, org.telegram.ui.Cells.ButterGramMessagesPreviewCell.MODE_STICKERS);
+                } else {
+                    view = new ButterGramPreviewView(context, kind);
+                }
                 view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
                 return new RecyclerListView.Holder(view);
             }
