@@ -381,6 +381,16 @@
     <string name="ButterGramShotSend">Отправить</string>
     <string name="ButterGramShotFailed">Не удалось подготовить картинки</string>
     <string name="ButterGramShotHint">Нажмите на сообщение, чтобы убрать его или скрыть текст. Скрытый текст заменяется спойлером. Меняется только эта картинка, сам чат остаётся как есть.</string>
+    <string name="ButterGramWebsite">Веб-сайт</string>
+    <string name="ButterGramSoon">Soon</string>
+    <string name="ButterGramFeature4Title">Ранние сборки</string>
+    <string name="ButterGramFeature4Text">Новые сборки ButterGram раньше всех в закрытой группе поддержавших.</string>
+    <string name="ButterGramSupportersGroupText">Это группа поддержавших ButterGram с ранними сборками.</string>
+    <string name="ButterGramChatHeaderSection">Шапка чата и ввод</string>
+    <string name="ButterGramChatCenterTitle">Заголовок чата по центру</string>
+    <string name="ButterGramBackBadge">Счётчик непрочитанных на кнопке «назад»</string>
+    <string name="ButterGramRememberKeyboard">Запоминать состояние клавиатуры</string>
+    <string name="ButterGramChatHeaderInfo">Заголовок и аватарка стоят по центру и подстраиваются под ширину текста. Счётчик показывает, сколько других чатов не прочитано. Клавиатура возвращается, когда вы вернулись в чат, где она была открыта.</string>
     <string name="ButterGramSwipeAction">Действие свайпом</string>
     <string name="ButterGramSwipeReply">Ответить</string>
     <string name="ButterGramSwipeForward">Переслать</string>

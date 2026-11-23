@@ -149,8 +149,12 @@ public class ButterGramSettingsActivity extends BaseFragment {
             return new Row(TYPE_VALUE, title, 0, value, ACTION_OPEN_URL, 0, url, null);
         }
 
-        static Row username(int title, String username) {
-            return new Row(TYPE_VALUE, title, 0, "@" + username, ACTION_OPEN_USERNAME, 0, username, null);
+        static Row username(int title, int icon, String username) {
+            return new Row(TYPE_VALUE, title, icon, "@" + username, ACTION_OPEN_USERNAME, 0, username, null);
+        }
+
+        static Row iconValue(int title, int icon, String value) {
+            return new Row(TYPE_VALUE, title, icon, value, ACTION_NONE, 0, null, null);
         }
 
         static Row colorPicker(int title, String value) {
@@ -550,6 +554,11 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.check(R.string.ButterGramHideReactionsIn, SharedSettings.buttergramHideReactionsIn));
                 rows.add(Row.check(R.string.ButterGramHideReactionsOut, SharedSettings.buttergramHideReactionsOut));
                 rows.add(Row.info(R.string.ButterGramBubblesInfo));
+                rows.add(Row.header(R.string.ButterGramChatHeaderSection));
+                rows.add(Row.check(R.string.ButterGramChatCenterTitle, SharedSettings.buttergramChatCenterTitle));
+                rows.add(Row.check(R.string.ButterGramBackBadge, SharedSettings.buttergramBackBadge));
+                rows.add(Row.check(R.string.ButterGramRememberKeyboard, SharedSettings.buttergramRememberKeyboard));
+                rows.add(Row.info(R.string.ButterGramChatHeaderInfo));
                 rows.add(Row.check(R.string.ButterGramScreenshotEditor, SharedSettings.buttergramScreenshotEditor));
                 rows.add(Row.info(R.string.ButterGramScreenshotInfo));
                 rows.add(Row.header(R.string.ButterGramSendHeader));
@@ -584,7 +593,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.action(R.string.ButterGramResetSettings, R.drawable.msg_reset, ACTION_RESET));
                 rows.add(Row.shadow());
                 rows.add(Row.header(R.string.ButterGramAbout));
-                rows.add(Row.plainValue(R.string.ButterGramVersion, BuildVars.BUILD_VERSION_STRING));
+                rows.add(Row.plainValue(R.string.ButterGramVersion, BuildVars.BUILD_VERSION_STRING + " · " + org.telegram.messenger.ButterGram.MOD_VERSION));
                 rows.add(Row.link(R.string.ButterGramLicense, "GPLv2", URL_LICENSE));
                 rows.add(Row.info(R.string.ButterGramAboutInfo));
                 break;
@@ -597,8 +606,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.category(R.string.ButterGramOther, R.drawable.msg_info, PAGE_OTHER));
                 rows.add(Row.shadow());
                 rows.add(Row.header(R.string.ButterGramLinks));
-                rows.add(Row.username(R.string.ButterGramChannel, USERNAME_CHANNEL));
-                rows.add(Row.username(R.string.ButterGramChatLink, USERNAME_CHAT));
+                rows.add(Row.username(R.string.ButterGramChannel, R.drawable.msg_channel, USERNAME_CHANNEL));
+                rows.add(Row.username(R.string.ButterGramChatLink, R.drawable.msg_groups, USERNAME_CHAT));
+                rows.add(Row.iconValue(R.string.ButterGramWebsite, R.drawable.msg_language, LocaleController.getString(R.string.ButterGramSoon)));
                 break;
         }
     }
@@ -845,7 +855,11 @@ public class ButterGramSettingsActivity extends BaseFragment {
                     }
                     break;
                 case TYPE_VALUE:
-                    ((TextCell) holder.itemView).setTextAndValue(LocaleController.getString(row.title), row.intSetting != null ? currentChoiceLabel(row) : row.value, divider);
+                    if (row.icon != 0) {
+                        ((TextCell) holder.itemView).setTextAndValueAndIcon(LocaleController.getString(row.title), row.value, row.icon, divider);
+                    } else {
+                        ((TextCell) holder.itemView).setTextAndValue(LocaleController.getString(row.title), row.intSetting != null ? currentChoiceLabel(row) : row.value, divider);
+                    }
                     break;
                 case TYPE_INFO:
                     ((TextInfoPrivacyCell) holder.itemView).setText(LocaleController.getString(row.title));

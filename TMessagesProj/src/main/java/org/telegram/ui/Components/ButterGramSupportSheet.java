@@ -137,6 +137,8 @@ public final class ButterGramSupportSheet {
                 LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
         content.addView(feature(context, R.drawable.msg_emoji_smiles, R.string.ButterGramFeature2Title, R.string.ButterGramFeature2Text),
                 LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
+        content.addView(feature(context, R.drawable.msg_download, R.string.ButterGramFeature4Title, R.string.ButterGramFeature4Text),
+                LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
         content.addView(feature(context, R.drawable.msg_payment_card, R.string.ButterGramFeature3Title, R.string.ButterGramFeature3Text),
                 LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
 

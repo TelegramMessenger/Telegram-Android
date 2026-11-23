@@ -484,6 +484,24 @@ public class ChatActivity extends BaseFragment implements
     private ThanosEffect chatListThanosEffect;
     private ChatListViewPaddingsAnimator chatListViewPaddingsAnimator;
     private ChatListRecyclerView chatListView;
+    private org.telegram.ui.Components.ButterGramBackBadge buttergramBackBadge;
+    private boolean buttergramKeyboardWasOpen;
+
+    private void buttergramUpdateBadge() {
+        if (buttergramBackBadge == null) {
+            return;
+        }
+        if (!org.telegram.utils.settings.SharedSettings.buttergramBackBadge.get() || inPreviewMode) {
+            buttergramBackBadge.setCount(0);
+            return;
+        }
+        int count = getMessagesStorage().getMainUnreadCount();
+        TLRPC.Dialog current = getMessagesController().dialogs_dict.get(dialog_id);
+        if (current != null && current.unread_count > 0) {
+            count--;
+        }
+        buttergramBackBadge.setCount(count);
+    }
     private final org.telegram.ui.Components.ButterGramScreenshot buttergramScreenshot = new org.telegram.ui.Components.ButterGramScreenshot();
     private ChatListItemAnimator chatListItemAnimator;
     private GridLayoutManagerFixed chatLayoutManager;
@@ -3712,6 +3730,9 @@ public class ChatActivity extends BaseFragment implements
         } else {
             actionBar.setBackButtonDrawable(new BackDrawable(isReport()));
         }
+        buttergramBackBadge = new org.telegram.ui.Components.ButterGramBackBadge(context);
+        actionBar.addView(buttergramBackBadge, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.LEFT | Gravity.TOP, 30, (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight / AndroidUtilities.density : 0) + 7, 0, 0));
+        buttergramUpdateBadge();
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -22744,6 +22765,7 @@ public class ChatActivity extends BaseFragment implements
                 chatActivityEnterView.updateSendButtonPaid();
             }
         } else if (id == NotificationCenter.updateInterfaces) {
+            buttergramUpdateBadge();
             int updateMask = (Integer) args[0];
             if ((updateMask & MessagesController.UPDATE_MASK_NAME) != 0 || (updateMask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0 || (updateMask & MessagesController.UPDATE_MASK_EMOJI_STATUS) != 0) {
                 if (currentChat != null) {
@@ -30662,6 +30684,15 @@ public class ChatActivity extends BaseFragment implements
     public void onResume() {
         super.onResume();
         buttergramScreenshot.start(this);
+        buttergramUpdateBadge();
+        if (buttergramKeyboardWasOpen && org.telegram.utils.settings.SharedSettings.buttergramRememberKeyboard.get()) {
+            buttergramKeyboardWasOpen = false;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (chatActivityEnterView != null && getParentActivity() != null) {
+                    chatActivityEnterView.openKeyboard();
+                }
+            }, 150);
+        }
         checkShowBlur(false);
         activityResumeTime = System.currentTimeMillis();
         if (openImport && getSendMessagesHelper().getImportingHistory(dialog_id) != null) {
@@ -30879,6 +30910,7 @@ public class ChatActivity extends BaseFragment implements
     public void onPause() {
         super.onPause();
         buttergramScreenshot.stop();
+        buttergramKeyboardWasOpen = chatActivityEnterView != null && chatActivityEnterView.isKeyboardVisible();
         scrolling = false;
         if (scrimPopupWindow != null) {
             scrimPopupWindow.setPauseNotifications(false);

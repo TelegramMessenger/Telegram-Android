@@ -178,6 +178,15 @@ public final class SharedSettings {
     public static final BooleanSetting buttergramScreenshotEditor =
         BooleanSetting.of("buttergram_screenshot_editor", true);
 
+    public static final BooleanSetting buttergramChatCenterTitle =
+        BooleanSetting.of("buttergram_chat_center_title", true);
+
+    public static final BooleanSetting buttergramBackBadge =
+        BooleanSetting.of("buttergram_back_badge", true);
+
+    public static final BooleanSetting buttergramRememberKeyboard =
+        BooleanSetting.of("buttergram_remember_keyboard", true);
+
     // seconds the text message is held back with an "Undo" button, 0 = off
     public static final IntSetting buttergramUndoSend =
         IntSetting.of("buttergram_undo_send", 0);

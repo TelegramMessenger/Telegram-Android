@@ -11797,6 +11797,16 @@
     <string name="ButterGramShotSend">Send</string>
     <string name="ButterGramShotFailed">Could not prepare the images</string>
     <string name="ButterGramShotHint">Tap a message to remove it or hide its text. Hidden text is replaced with a spoiler. Only this picture changes, the chat stays as it is.</string>
+    <string name="ButterGramWebsite">Website</string>
+    <string name="ButterGramSoon">Soon</string>
+    <string name="ButterGramFeature4Title">Early builds</string>
+    <string name="ButterGramFeature4Text">New ButterGram builds before everyone else, in a closed supporters group.</string>
+    <string name="ButterGramSupportersGroupText">This is the ButterGram supporters group with early builds.</string>
+    <string name="ButterGramChatHeaderSection">Chat header and input</string>
+    <string name="ButterGramChatCenterTitle">Centered chat title</string>
+    <string name="ButterGramBackBadge">Unread counter on the back button</string>
+    <string name="ButterGramRememberKeyboard">Remember keyboard state</string>
+    <string name="ButterGramChatHeaderInfo">The title and avatar sit in the middle and follow the width of the text. The counter shows how many other chats are unread. The keyboard comes back when you return to a chat where it was open.</string>
     <string name="ButterGramSwipeAction">Swipe action</string>
     <string name="ButterGramSwipeReply">Reply</string>
     <string name="ButterGramSwipeForward">Forward</string>
