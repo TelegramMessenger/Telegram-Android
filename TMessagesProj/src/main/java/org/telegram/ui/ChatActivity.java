@@ -484,6 +484,7 @@ public class ChatActivity extends BaseFragment implements
     private ThanosEffect chatListThanosEffect;
     private ChatListViewPaddingsAnimator chatListViewPaddingsAnimator;
     private ChatListRecyclerView chatListView;
+    private final org.telegram.ui.Components.ButterGramScreenshot buttergramScreenshot = new org.telegram.ui.Components.ButterGramScreenshot();
     private ChatListItemAnimator chatListItemAnimator;
     private GridLayoutManagerFixed chatLayoutManager;
     private ChatActivityAdapter chatAdapter;
@@ -30660,6 +30661,7 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onResume() {
         super.onResume();
+        buttergramScreenshot.start(this);
         checkShowBlur(false);
         activityResumeTime = System.currentTimeMillis();
         if (openImport && getSendMessagesHelper().getImportingHistory(dialog_id) != null) {
@@ -30876,6 +30878,7 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onPause() {
         super.onPause();
+        buttergramScreenshot.stop();
         scrolling = false;
         if (scrimPopupWindow != null) {
             scrimPopupWindow.setPauseNotifications(false);

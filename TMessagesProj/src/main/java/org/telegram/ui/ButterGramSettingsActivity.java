@@ -550,6 +550,8 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.check(R.string.ButterGramHideReactionsIn, SharedSettings.buttergramHideReactionsIn));
                 rows.add(Row.check(R.string.ButterGramHideReactionsOut, SharedSettings.buttergramHideReactionsOut));
                 rows.add(Row.info(R.string.ButterGramBubblesInfo));
+                rows.add(Row.check(R.string.ButterGramScreenshotEditor, SharedSettings.buttergramScreenshotEditor));
+                rows.add(Row.info(R.string.ButterGramScreenshotInfo));
                 rows.add(Row.header(R.string.ButterGramSendHeader));
                 rows.add(Row.choice(R.string.ButterGramUndoSend, SharedSettings.buttergramUndoSend, new int[]{0, 3, 5, 10, 15}, undoLabels()));
                 rows.add(Row.info(R.string.ButterGramUndoInfo));
