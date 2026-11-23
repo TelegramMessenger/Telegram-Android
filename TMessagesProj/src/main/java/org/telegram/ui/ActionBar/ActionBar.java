@@ -201,6 +201,8 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
 
     private boolean glassMode;
     private boolean glassOnlyBack;
+    /** ButterGram: extra width of the back pill (it holds the unread counter). */
+    public int buttergramBackExtra;
     private boolean glassModeIsForum;
 
     private ChatAvatarContainer chatAvatarContainer;
@@ -2490,7 +2492,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 final int menuWidthWithPadding = menuWidth + ((hasForcedMenuWidth || hasForcedMenuMinWidth) ? (menuWidth > 0 ? p : 0) : (int) (p * animatorHasMenuItems.getFloatValue()));
                 final int rightOffset = lerp(menuWidthWithPadding, Math.max(menuWidthWithPadding, p + s), chatAvatarContainer == null ? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());
 
-                final int leftDefault = lerp(hasBackButton ? s + p : 0, s + p, chatAvatarContainer == null? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());
+                final int leftDefault = lerp(hasBackButton ? s + p + buttergramBackExtra : 0, s + p + buttergramBackExtra, chatAvatarContainer == null? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());
                 final int rightDefault = getWidth() - rightOffset;
                 final int widthDefault = rightDefault - leftDefault;
                 final int left, right;
@@ -2517,7 +2519,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             }
         }
         if (glassDrawableBack != null && hasBackButton) {
-            glassDrawableBack.setBounds(0, t, s + p * 2, b);
+            glassDrawableBack.setBounds(0, t, s + p * 2 + buttergramBackExtra, b);
             glassDrawableBack.draw(canvas);
         }
         if (glassDrawableMenu != null && menuWidth > 0 && !glassOnlyBack && !doNotDrawGlassMenu && !isMenuPillInOverlay()) {

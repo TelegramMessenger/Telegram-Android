@@ -39,6 +39,10 @@ public class ButterGramBackBadge extends View {
         invalidate();
     }
 
+    public int getBadgeWidth() {
+        return Math.max(dp(18), (int) Math.ceil(text.measureText(label)) + dp(10));
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int w = Math.max(dp(18), (int) Math.ceil(text.measureText(label)) + dp(10));

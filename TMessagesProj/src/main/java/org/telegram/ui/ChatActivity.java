@@ -501,6 +501,74 @@ public class ChatActivity extends BaseFragment implements
             count--;
         }
         buttergramBackBadge.setCount(count);
+        buttergramLayoutBadge(count);
+    }
+
+    /** The badge sits inside a widened back pill, centered on the arrow row. */
+    private void buttergramLayoutBadge(int count) {
+        if (buttergramBackBadge == null || actionBar == null) {
+            return;
+        }
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) buttergramBackBadge.getLayoutParams();
+        int top = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + (ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(18)) / 2;
+        int extra = count > 0 ? buttergramBackBadge.getBadgeWidth() + AndroidUtilities.dp(6) : 0;
+        if (lp != null && (lp.topMargin != top || lp.leftMargin != AndroidUtilities.dp(38))) {
+            lp.topMargin = top;
+            lp.leftMargin = AndroidUtilities.dp(38);
+            buttergramBackBadge.setLayoutParams(lp);
+        }
+        if (actionBar.buttergramBackExtra != extra) {
+            actionBar.buttergramBackExtra = extra;
+            actionBar.requestLayout();
+            actionBar.invalidate();
+        }
+    }
+
+    private static final int BUTTERGRAM_AVATAR_ITEM = 7777;
+    private ActionBarMenuItem buttergramAvatarItem;
+    private BackupImageView buttergramAvatarView;
+
+    /** iOS-style header: the chat avatar sits in the right pill, the title is centered in its own pill. */
+    private long buttergramAvatarKey;
+
+    private void buttergramRefreshRightAvatar(boolean reload) {
+        if (actionBar == null || avatarContainer == null || isReport() || startLoadFromDate != 0) {
+            return;
+        }
+        boolean enabled = org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get() && !inPreviewMode;
+        if (!enabled) {
+            if (buttergramAvatarItem != null) {
+                buttergramAvatarItem.setVisibility(View.GONE);
+            }
+            return;
+        }
+        ActionBarMenu menu = actionBar.createMenu();
+        if (buttergramAvatarItem == null) {
+            buttergramAvatarItem = menu.addItemWithWidth(BUTTERGRAM_AVATAR_ITEM, 0, 48);
+            buttergramAvatarView = new BackupImageView(getParentActivity() != null ? getParentActivity() : buttergramAvatarItem.getContext());
+            buttergramAvatarView.setRoundRadius(AndroidUtilities.dp(18));
+            buttergramAvatarItem.addView(buttergramAvatarView, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
+        }
+        buttergramAvatarItem.setVisibility(View.VISIBLE);
+        // keep it the right-most item
+        if (menu.indexOfChild(buttergramAvatarItem) != menu.getChildCount() - 1) {
+            menu.removeView(buttergramAvatarItem);
+            menu.addView(buttergramAvatarItem);
+            actionBar.checkMenuItemsWidth();
+        }
+        TLObject object = currentUser != null ? currentUser : currentChat;
+        long key = currentUser != null ? currentUser.id : currentChat != null ? -currentChat.id : 0;
+        if (object != null && (reload || key != buttergramAvatarKey)) {
+            buttergramAvatarKey = key;
+            AvatarDrawable drawable = new AvatarDrawable();
+            drawable.setInfo(currentAccount, object);
+            if (currentUser != null && UserObject.isUserSelf(currentUser)) {
+                drawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+                buttergramAvatarView.setForUserOrChat(null, drawable);
+            } else {
+                buttergramAvatarView.setForUserOrChat(object, drawable);
+            }
+        }
     }
     private final org.telegram.ui.Components.ButterGramScreenshot buttergramScreenshot = new org.telegram.ui.Components.ButterGramScreenshot();
     private ChatListItemAnimator chatListItemAnimator;
@@ -3740,6 +3808,10 @@ public class ChatActivity extends BaseFragment implements
                 // the chat's menu is also opened from the sidebar: what it does is in the chat
                 if (id != chat_menu_options && id != chat_menu_topics_panel && id != -1 && topicsPanel != null && topicsPanel.isOpen()) {
                     topicsPanel.close();
+                }
+                if (id == BUTTERGRAM_AVATAR_ITEM) {
+                    avatarContainer.openProfile(true);
+                    return;
                 }
                 if (id == -1) {
                     if (isInPollAddOptionMode()) {
@@ -22766,6 +22838,7 @@ public class ChatActivity extends BaseFragment implements
             }
         } else if (id == NotificationCenter.updateInterfaces) {
             buttergramUpdateBadge();
+            buttergramRefreshRightAvatar(((Integer) args[0] & MessagesController.UPDATE_MASK_AVATAR) != 0);
             int updateMask = (Integer) args[0];
             if ((updateMask & MessagesController.UPDATE_MASK_NAME) != 0 || (updateMask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0 || (updateMask & MessagesController.UPDATE_MASK_EMOJI_STATUS) != 0) {
                 if (currentChat != null) {
@@ -30685,6 +30758,7 @@ public class ChatActivity extends BaseFragment implements
         super.onResume();
         buttergramScreenshot.start(this);
         buttergramUpdateBadge();
+        buttergramRefreshRightAvatar(false);
         if (buttergramKeyboardWasOpen && org.telegram.utils.settings.SharedSettings.buttergramRememberKeyboard.get()) {
             buttergramKeyboardWasOpen = false;
             AndroidUtilities.runOnUIThread(() -> {

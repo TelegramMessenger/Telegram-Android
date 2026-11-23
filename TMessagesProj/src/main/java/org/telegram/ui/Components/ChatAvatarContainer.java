@@ -184,6 +184,11 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
 
         final boolean avatarClickable = parentFragment != null && (parentFragment.getChatMode() == 0 || parentFragment.getChatMode() == ChatActivity.MODE_SUGGESTIONS) && !UserObject.isReplyUser(parentFragment.getCurrentUser()) && (parentFragment.getCurrentUser() == null || parentFragment.getCurrentUser().id != UserObject.VERIFY);
         avatarImageView = new BackupImageView(context) {
+            @Override
+            public void setVisibility(int visibility) {
+                // ButterGram: with the iOS-style header the avatar lives in the right pill instead
+                super.setVisibility(glassMode && org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get() ? GONE : visibility);
+            }
 
             StoriesUtilities.AvatarStoryParams params = new StoriesUtilities.AvatarStoryParams(true) {
                 @Override
@@ -766,6 +771,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             subtitleTextView.setTextSizePx(dp(13.5f));
         }
         glassMode = true;
+        avatarImageView.setVisibility(avatarImageView.getVisibility());
     }
 
     @Override

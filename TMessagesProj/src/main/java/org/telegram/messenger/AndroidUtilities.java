@@ -6729,7 +6729,7 @@ public class AndroidUtilities {
                     }
                     break;
             }
-            return formatString("TelegramVersion", R.string.TelegramVersion, String.format(Locale.US, "v%s (%d) %s", pInfo.versionName, code, abi));
+            return formatString("TelegramVersion", R.string.TelegramVersion, String.format(Locale.US, "v%s (%d) \u2022 %s %s", pInfo.versionName, code, ButterGram.MOD_VERSION, abi));
         } catch (Exception e) {
             FileLog.e(e);
         }

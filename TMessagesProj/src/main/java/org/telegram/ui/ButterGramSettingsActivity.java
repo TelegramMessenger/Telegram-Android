@@ -593,7 +593,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.action(R.string.ButterGramResetSettings, R.drawable.msg_reset, ACTION_RESET));
                 rows.add(Row.shadow());
                 rows.add(Row.header(R.string.ButterGramAbout));
-                rows.add(Row.plainValue(R.string.ButterGramVersion, BuildVars.BUILD_VERSION_STRING + " · " + org.telegram.messenger.ButterGram.MOD_VERSION));
+                rows.add(Row.plainValue(R.string.ButterGramVersion, BuildVars.BUILD_VERSION_STRING + " \u2022 " + org.telegram.messenger.ButterGram.MOD_VERSION));
                 rows.add(Row.link(R.string.ButterGramLicense, "GPLv2", URL_LICENSE));
                 rows.add(Row.info(R.string.ButterGramAboutInfo));
                 break;
@@ -761,7 +761,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
             version.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             version.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
             version.setGravity(Gravity.CENTER);
-            version.setText(BuildVars.BUILD_VERSION_STRING);
+            version.setText(BuildVars.BUILD_VERSION_STRING + " \u2022 " + org.telegram.messenger.ButterGram.MOD_VERSION);
             addView(version, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 0));
         }
     }
