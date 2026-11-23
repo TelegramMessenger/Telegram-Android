@@ -557,6 +557,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.header(R.string.ButterGramChatHeaderSection));
                 rows.add(Row.check(R.string.ButterGramChatCenterTitle, SharedSettings.buttergramChatCenterTitle));
                 rows.add(Row.check(R.string.ButterGramBackBadge, SharedSettings.buttergramBackBadge));
+                rows.add(Row.check(R.string.ButterGramIosInput, SharedSettings.buttergramIosInput));
                 rows.add(Row.check(R.string.ButterGramRememberKeyboard, SharedSettings.buttergramRememberKeyboard));
                 rows.add(Row.info(R.string.ButterGramChatHeaderInfo));
                 rows.add(Row.check(R.string.ButterGramScreenshotEditor, SharedSettings.buttergramScreenshotEditor));

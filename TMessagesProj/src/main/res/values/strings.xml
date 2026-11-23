@@ -11807,6 +11807,7 @@
     <string name="ButterGramBackBadge">Unread counter on the back button</string>
     <string name="ButterGramRememberKeyboard">Remember keyboard state</string>
     <string name="ButterGramChatHeaderInfo">The title sits in its own pill in the middle and follows the width of the text, the avatar moves to the right pill. The counter shows how many other chats are unread. The keyboard comes back when you return to a chat where it was open.</string>
+    <string name="ButterGramIosInput">iOS-style input field (restart the chat)</string>
     <string name="ButterGramSwipeAction">Swipe action</string>
     <string name="ButterGramSwipeReply">Reply</string>
     <string name="ButterGramSwipeForward">Forward</string>

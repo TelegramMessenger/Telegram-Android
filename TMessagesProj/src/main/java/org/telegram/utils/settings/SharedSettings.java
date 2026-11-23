@@ -187,6 +187,9 @@ public final class SharedSettings {
     public static final BooleanSetting buttergramRememberKeyboard =
         BooleanSetting.of("buttergram_remember_keyboard", true);
 
+    public static final BooleanSetting buttergramIosInput =
+        BooleanSetting.of("buttergram_ios_input", false);
+
     // seconds the text message is held back with an "Undo" button, 0 = off
     public static final IntSetting buttergramUndoSend =
         IntSetting.of("buttergram_undo_send", 0);

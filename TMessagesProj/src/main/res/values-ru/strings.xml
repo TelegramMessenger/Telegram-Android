@@ -391,6 +391,7 @@
     <string name="ButterGramBackBadge">Счётчик непрочитанных на кнопке «назад»</string>
     <string name="ButterGramRememberKeyboard">Запоминать состояние клавиатуры</string>
     <string name="ButterGramChatHeaderInfo">Заголовок стоит в своей плашке по центру и подстраивается под ширину текста, аватарка переезжает в правую плашку. Счётчик показывает, сколько других чатов не прочитано. Клавиатура возвращается, когда вы вернулись в чат, где она была открыта.</string>
+    <string name="ButterGramIosInput">Поле ввода как в iOS (перезайдите в чат)</string>
     <string name="ButterGramSwipeAction">Действие свайпом</string>
     <string name="ButterGramSwipeReply">Ответить</string>
     <string name="ButterGramSwipeForward">Переслать</string>
