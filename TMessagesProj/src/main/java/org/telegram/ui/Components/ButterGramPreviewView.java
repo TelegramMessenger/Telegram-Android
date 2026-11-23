@@ -51,7 +51,7 @@ public class ButterGramPreviewView extends View {
         int h;
         switch (kind) {
             case KIND_LIST:
-                h = 250;
+                h = 372;
                 break;
             case KIND_STICKER:
                 h = 250;
@@ -117,79 +117,142 @@ public class ButterGramPreviewView extends View {
     // Chat list: title, search, avatars, floating button
     // ---------------------------------------------------------------------------------------------
 
-    private void drawAvatar(Canvas canvas, float cx, float cy, float size, int fill, String letter) {
+    private Drawable logoDrawable;
+
+    private void drawAvatar(Canvas canvas, float cx, float cy, float size, int fill, String letter, boolean logo) {
         float radius = ButterGram.avatarRadius(dp(size / 2f));
-        paint.setColor(fill);
         rect.set(cx - dp(size / 2f), cy - dp(size / 2f), cx + dp(size / 2f), cy + dp(size / 2f));
+        if (logo) {
+            if (logoDrawable == null) {
+                logoDrawable = ContextCompat.getDrawable(getContext(), R.drawable.buttergram_logo);
+            }
+            if (logoDrawable != null) {
+                canvas.save();
+                path.reset();
+                path.addRoundRect(rect, radius, radius, Path.Direction.CW);
+                canvas.clipPath(path);
+                logoDrawable.setBounds((int) rect.left, (int) rect.top, (int) rect.right, (int) rect.bottom);
+                logoDrawable.draw(canvas);
+                canvas.restore();
+                return;
+            }
+        }
+        paint.setColor(fill);
         canvas.drawRoundRect(rect, radius, radius, paint);
-        drawText(canvas, letter, cx, cy + dp(6), 18, 0xFFFFFFFF, true, Paint.Align.CENTER);
+        drawText(canvas, letter, cx, cy + dp(7), 20, 0xFFFFFFFF, true, Paint.Align.CENTER);
+    }
+
+    private void drawChecks(Canvas canvas, float right, float cy, int color) {
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(dp(1.6f));
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setColor(color);
+        for (int k = 0; k < 2; k++) {
+            float x = right - dp(k * 5);
+            canvas.drawLine(x - dp(9), cy, x - dp(6), cy + dp(3), paint);
+            canvas.drawLine(x - dp(6), cy + dp(3), x - dp(1), cy - dp(3), paint);
+        }
+        paint.setStyle(Paint.Style.FILL);
     }
 
     private void drawList(Canvas canvas, float l, float t, float r, float b) {
-        // top bar
-        paint.setColor(color(Theme.key_windowBackgroundWhite));
-        canvas.drawRect(l, t, r, t + dp(48), paint);
+        // real action bar colours, like the chat list of the app
+        paint.setColor(color(Theme.key_actionBarDefault));
+        canvas.drawRect(l, t, r, t + dp(56), paint);
+        int titleColor = color(Theme.key_actionBarDefaultTitle);
         String title = ButterGram.listTitle();
-        float baseline = t + dp(31);
+        float baseline = t + dp(36);
         if (SharedSettings.buttergramCenterTitle.get()) {
-            drawText(canvas, title, (l + r) / 2f, baseline, 18, color(Theme.key_windowBackgroundWhiteBlackText), true, Paint.Align.CENTER);
+            drawText(canvas, title, (l + r) / 2f, baseline, 20, titleColor, true, Paint.Align.CENTER);
         } else {
-            drawText(canvas, title, l + dp(16), baseline, 18, color(Theme.key_windowBackgroundWhiteBlackText), true, Paint.Align.LEFT);
+            drawText(canvas, title, l + dp(20), baseline, 20, titleColor, true, Paint.Align.LEFT);
         }
-        // search icon (it is always in the bar, it only appears when the field below is hidden)
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(dp(2));
-        paint.setStrokeCap(Paint.Cap.ROUND);
-        paint.setColor(color(Theme.key_windowBackgroundWhiteGrayText));
         if (SharedSettings.buttergramHideSearch.get()) {
-            float cx = r - dp(26);
-            float cy = t + dp(22);
-            canvas.drawCircle(cx, cy, dp(6), paint);
-            canvas.drawLine(cx + dp(4.5f), cy + dp(4.5f), cx + dp(9), cy + dp(9), paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(2));
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setColor(color(Theme.key_actionBarDefaultIcon));
+            float cx = r - dp(30);
+            float cy = t + dp(26);
+            canvas.drawCircle(cx, cy, dp(7), paint);
+            canvas.drawLine(cx + dp(5), cy + dp(5), cx + dp(10), cy + dp(10), paint);
+            paint.setStyle(Paint.Style.FILL);
         }
-        paint.setStyle(Paint.Style.FILL);
 
-        float y = t + dp(52);
+        float y = t + dp(56);
+        paint.setColor(color(Theme.key_windowBackgroundWhite));
+        canvas.drawRect(l, y, r, b, paint);
         if (!SharedSettings.buttergramHideSearch.get()) {
-            paint.setColor(color(Theme.key_windowBackgroundWhite));
-            rect.set(l + dp(12), y, r - dp(12), y + dp(34));
-            canvas.drawRoundRect(rect, dp(17), dp(17), paint);
-            drawText(canvas, LocaleController.getString(R.string.Search), l + dp(30), y + dp(22), 14, color(Theme.key_windowBackgroundWhiteGrayText), false, Paint.Align.LEFT);
-            y += dp(40);
+            paint.setColor(color(Theme.key_windowBackgroundGray));
+            rect.set(l + dp(12), y + dp(6), r - dp(12), y + dp(42));
+            canvas.drawRoundRect(rect, dp(18), dp(18), paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(1.8f));
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setColor(color(Theme.key_windowBackgroundWhiteGrayText));
+            canvas.drawCircle(l + dp(30), y + dp(23), dp(5.5f), paint);
+            canvas.drawLine(l + dp(34), y + dp(27), l + dp(38), y + dp(31), paint);
+            paint.setStyle(Paint.Style.FILL);
+            drawText(canvas, LocaleController.getString(R.string.Search), l + dp(48), y + dp(29), 15, color(Theme.key_windowBackgroundWhiteGrayText), false, Paint.Align.LEFT);
+            y += dp(48);
         }
-        for (int i = 0; i < 2; i++) {
-            float rowTop = y + i * dp(62);
-            paint.setColor(color(Theme.key_windowBackgroundWhite));
-            canvas.drawRect(l, rowTop, r, rowTop + dp(60), paint);
-            float cx = l + dp(36);
-            float cy = rowTop + dp(30);
-            drawAvatar(canvas, cx, cy, 48, i == 0 ? BUTTER : 0xFF5B8DEF, i == 0 ? "B" : "C");
-            String name = i == 0 ? "ButterGram" : LocaleController.getString(R.string.ButterGramPreviewChat);
-            drawText(canvas, name, l + dp(70), rowTop + dp(25), 16, color(Theme.key_windowBackgroundWhiteBlackText), true, Paint.Align.LEFT);
+        int nameColor = color(Theme.key_chats_name);
+        int messageColor = color(Theme.key_chats_message);
+        int dateColor = color(Theme.key_chats_date);
+        String time = ButterGram.formatTime(System.currentTimeMillis() / 1000).replaceAll(":\\d\\d(?=$| )", "");
+        String hello = LocaleController.getString(R.string.ButterGramPreviewText);
+        String you = LocaleController.getString(R.string.FromYou) + ": ";
+        for (int i = 0; i < 3; i++) {
+            float rowTop = y + i * dp(72);
+            if (rowTop + dp(72) > b + dp(2)) {
+                break;
+            }
+            drawAvatar(canvas, l + dp(38), rowTop + dp(36), 56, i == 1 ? 0xFF5B8DEF : 0xFF4FA3E3, i == 1 ? "C" : "S", i == 0);
+            String name = i == 0 ? "ButterGram" : i == 1 ? LocaleController.getString(R.string.ButterGramPreviewChat) : LocaleController.getString(R.string.SavedMessages);
+            drawText(canvas, name, l + dp(76), rowTop + dp(29), 17, nameColor, true, Paint.Align.LEFT);
             if (i == 0) {
                 Drawable badge = ButterGram.badge();
                 if (badge != null) {
-                    int bx = (int) (l + dp(70) + textWidth(name, 16, true) + dp(4));
-                    badge.setBounds(bx, (int) (rowTop + dp(10)), bx + dp(18), (int) (rowTop + dp(28)));
+                    int bx = (int) (l + dp(76) + textWidth(name, 17, true) + dp(4));
+                    badge.setBounds(bx, (int) (rowTop + dp(13)), bx + dp(18), (int) (rowTop + dp(31)));
                     badge.draw(canvas);
                 }
             }
-            drawText(canvas, LocaleController.getString(R.string.ButterGramPreviewText), l + dp(70), rowTop + dp(46), 14, color(Theme.key_windowBackgroundWhiteGrayText), false, Paint.Align.LEFT);
-            drawText(canvas, ButterGram.formatTime(System.currentTimeMillis() / 1000).replaceAll(":\\d\\d(?=$| )", ""), r - dp(12), rowTop + dp(24), 12, color(Theme.key_windowBackgroundWhiteGrayText), false, Paint.Align.RIGHT);
-            if (i == 0) {
-                paint.setColor(color(Theme.key_chats_unreadCounter));
-                canvas.drawCircle(r - dp(22), rowTop + dp(42), dp(9), paint);
-                drawText(canvas, "3", r - dp(22), rowTop + dp(46), 11, 0xFFFFFFFF, true, Paint.Align.CENTER);
+            if (i == 1) {
+                drawText(canvas, you, l + dp(76), rowTop + dp(53), 15, color(Theme.key_chats_nameMessage), false, Paint.Align.LEFT);
+                drawText(canvas, hello, l + dp(76) + textWidth(you, 15, false), rowTop + dp(53), 15, messageColor, false, Paint.Align.LEFT);
+                drawChecks(canvas, r - dp(14) - textWidth(time, 13, false) - dp(5), rowTop + dp(24), color(Theme.key_chats_sentCheck));
+            } else {
+                drawText(canvas, hello, l + dp(76), rowTop + dp(53), 15, messageColor, false, Paint.Align.LEFT);
+            }
+            drawText(canvas, time, r - dp(14), rowTop + dp(28), 13, dateColor, false, Paint.Align.RIGHT);
+            if (i != 1) {
+                String count = i == 0 ? "3" : "12";
+                float cw = Math.max(dp(22), textWidth(count, 13, true) + dp(14));
+                rect.set(r - dp(14) - cw, rowTop + dp(38), r - dp(14), rowTop + dp(60));
+                paint.setColor(i == 0 ? color(Theme.key_chats_unreadCounter) : color(Theme.key_chats_unreadCounterMuted));
+                canvas.drawRoundRect(rect, dp(11), dp(11), paint);
+                drawText(canvas, count, rect.centerX(), rowTop + dp(54), 13, color(Theme.key_chats_unreadCounterText), true, Paint.Align.CENTER);
+            }
+            if (i < 2) {
+                paint.setColor(color(Theme.key_divider));
+                canvas.drawRect(l + dp(76), rowTop + dp(71), r, rowTop + dp(72), paint);
             }
         }
         if (!SharedSettings.buttergramHideFab.get()) {
-            float cx = r - dp(40);
-            float cy = b - dp(38);
-            paint.setColor(BUTTER);
-            canvas.drawCircle(cx, cy, dp(24), paint);
-            paint.setColor(0xFFFFFFFF);
-            canvas.drawRoundRect(cx - dp(9), cy - dp(1.2f), cx + dp(9), cy + dp(1.2f), dp(1.2f), dp(1.2f), paint);
-            canvas.drawRoundRect(cx - dp(1.2f), cy - dp(9), cx + dp(1.2f), cy + dp(9), dp(1.2f), dp(1.2f), paint);
+            float cx = r - dp(44);
+            float cy = b - dp(44);
+            paint.setColor(color(Theme.key_chats_actionBackground));
+            paint.setShadowLayer(dp(4), 0, dp(2), 0x40000000);
+            canvas.drawCircle(cx, cy, dp(28), paint);
+            paint.clearShadowLayer();
+            Drawable pencil = ContextCompat.getDrawable(getContext(), R.drawable.floating_pencil);
+            if (pencil != null) {
+                pencil = pencil.mutate();
+                pencil.setColorFilter(new PorterDuffColorFilter(color(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
+                pencil.setBounds((int) (cx - dp(14)), (int) (cy - dp(14)), (int) (cx + dp(14)), (int) (cy + dp(14)));
+                pencil.draw(canvas);
+            }
         }
     }
 
