@@ -242,7 +242,7 @@ public final class ButterGram {
     public static final String MOD_VERSION = "20261123";
 
     /** Chat ids (without -100) of the supporters group with early builds. Fill in once the group exists. */
-    private static final long[] SUPPORTERS_GROUPS = {};
+    private static final long[] SUPPORTERS_GROUPS = {5591272129L};
 
     private static final long[] OFFICIAL_CHANNELS = {4392732376L, 4372744306L};
     private static final long[] TEAM_USERS = {5074845818L};
