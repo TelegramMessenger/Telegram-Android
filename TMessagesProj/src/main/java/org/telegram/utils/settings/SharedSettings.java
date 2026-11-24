@@ -190,6 +190,12 @@ public final class SharedSettings {
     public static final BooleanSetting buttergramIosInput =
         BooleanSetting.of("buttergram_ios_input", true);
 
+    public static final BooleanSetting buttergramProfileGifts =
+        BooleanSetting.of("buttergram_profile_gifts", true);
+
+    public static final BooleanSetting buttergramProfileFullBg =
+        BooleanSetting.of("buttergram_profile_full_bg", true);
+
     // seconds the text message is held back with an "Undo" button, 0 = off
     public static final IntSetting buttergramUndoSend =
         IntSetting.of("buttergram_undo_send", 0);

@@ -290,6 +290,19 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                     }
                 }
             }
+            // ButterGram: also show other collectible gifts around the avatar until the free slots are used
+            if (org.telegram.utils.settings.SharedSettings.buttergramProfileGifts.get()) {
+                for (int i = 0; i < list.gifts.size() && gifts.size() < maxCount; i++) {
+                    final TL_stars.SavedStarGift savedGift = list.gifts.get(i);
+                    if (!savedGift.unsaved && !savedGift.pinned_to_top && savedGift.gift instanceof TL_stars.TL_starGiftUnique) {
+                        final Gift gift = new Gift((TL_stars.TL_starGiftUnique) savedGift.gift);
+                        if (!giftIds.contains(gift.id)) {
+                            gifts.add(gift);
+                            giftIds.add(gift.id);
+                        }
+                    }
+                }
+            }
         }
 
         boolean changed = false;

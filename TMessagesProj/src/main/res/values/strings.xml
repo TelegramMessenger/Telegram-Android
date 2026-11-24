@@ -11808,6 +11808,10 @@
     <string name="ButterGramRememberKeyboard">Remember keyboard state</string>
     <string name="ButterGramChatHeaderInfo">The title sits in its own pill in the middle and follows the width of the text, the avatar moves to the right pill. The counter shows how many other chats are unread. The keyboard comes back when you return to a chat where it was open.</string>
     <string name="ButterGramIosInput">iOS-style input field (restart the chat)</string>
+    <string name="ButterGramProfileHeader">Profile</string>
+    <string name="ButterGramProfileFullBg">Profile colour on the whole page</string>
+    <string name="ButterGramProfileGifts">Gift bubbles around the avatar</string>
+    <string name="ButterGramProfileInfo">The profile colour tints the page behind the cards (gift info sheets are not affected). Collectible gifts float around the avatar, pinned ones first, then the rest until the free spots run out.</string>
     <string name="ButterGramSwipeAction">Swipe action</string>
     <string name="ButterGramSwipeReply">Reply</string>
     <string name="ButterGramSwipeForward">Forward</string>
