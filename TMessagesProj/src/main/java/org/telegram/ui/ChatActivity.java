@@ -544,7 +544,7 @@ public class ChatActivity extends BaseFragment implements
         }
         ActionBarMenu menu = actionBar.createMenu();
         if (buttergramAvatarItem == null) {
-            buttergramAvatarItem = menu.addItemWithWidth(BUTTERGRAM_AVATAR_ITEM, 0, 48);
+            buttergramAvatarItem = menu.addItemWithWidth(BUTTERGRAM_AVATAR_ITEM, 0, AndroidUtilities.dp(46));
             buttergramAvatarView = new BackupImageView(getParentActivity() != null ? getParentActivity() : buttergramAvatarItem.getContext());
             buttergramAvatarView.setRoundRadius(AndroidUtilities.dp(18));
             buttergramAvatarItem.addView(buttergramAvatarView, LayoutHelper.createFrame(36, 36, Gravity.CENTER));

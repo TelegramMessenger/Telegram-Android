@@ -777,17 +777,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         final int actionBarHeight = ActionBar.getCurrentActionBarHeight();
-        // ButterGram: centre the avatar + title group, its width follows the text
-        int buttergramShift = 0;
-        if (org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get() && subtitleTextView != null) {
-            int textWidth = titleTextView.getMeasuredWidth();
-            if (subtitleTextView != null) {
-                textWidth = Math.max(textWidth, subtitleTextView.getMeasuredWidth());
-            }
-            int groupWidth = (avatarImageView.getVisibility() == VISIBLE ? dp(glassMode ? 49.66f : 55) : dp(glassMode ? 13 : 1)) + rightAvatarPadding + textWidth;
-            buttergramShift = Math.max(0, (getMeasuredWidth() - leftPadding - groupWidth) / 2 - dp(8));
-        }
-        final int lp = leftPadding + buttergramShift;
+        final int lp = leftPadding;
         final int viewTop = (actionBarHeight - avatarImageView.getMeasuredHeight() - 2) / 2 + (occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
         final int subtitleTop = viewTop + dp(glassMode ? 23.66f : 24);
 
