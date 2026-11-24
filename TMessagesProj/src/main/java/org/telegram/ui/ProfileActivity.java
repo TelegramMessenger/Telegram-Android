@@ -1243,7 +1243,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         private int currentColor;
         private Paint paint = new Paint();
-        private final Paint buttergramTint = new Paint();
 
         public TopView(Context context) {
             super(context);
@@ -1408,12 +1407,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (progressToGradient > 0) {
                     backgroundPaint.setAlpha((int) (0xFF * progressToGradient));
                     canvas.drawRect(0, 0, getMeasuredWidth(), y1, backgroundPaint);
-                    if (org.telegram.utils.settings.SharedSettings.buttergramProfileFullBg.get() && hasColorById && y1 < getMeasuredHeight()) {
-                        // ButterGram: the profile colour tints the whole page behind the cards
-                        buttergramTint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_windowBackgroundGray), color1Animated.get(), 0.3f));
-                        buttergramTint.setAlpha((int) (0xFF * progressToGradient));
-                        canvas.drawRect(0, y1, getMeasuredWidth(), getMeasuredHeight(), buttergramTint);
-                    }
                 }
                 if (hasEmoji && !capturing) {
                     final float loadedScale = emojiLoadedT.set(isEmojiLoaded());
