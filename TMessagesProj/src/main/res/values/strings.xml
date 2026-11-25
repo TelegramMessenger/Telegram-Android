@@ -11840,6 +11840,7 @@
     <string name="ButterGramPluginsUnknownSource">Unknown source</string>
     <string name="ButterGramPluginsTrustedSource">Trusted source</string>
     <string name="ButterGramPluginsEnableAfter">Enable after install</string>
+    <string name="ButterGramPluginsDeleteConfirm">Delete this plugin and its settings?</string>
     <string name="ButterGramSwipeAction">Swipe action</string>
     <string name="ButterGramSwipeReply">Reply</string>
     <string name="ButterGramSwipeForward">Forward</string>

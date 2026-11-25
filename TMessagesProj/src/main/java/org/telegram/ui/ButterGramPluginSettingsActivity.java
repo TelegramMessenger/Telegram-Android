@@ -27,6 +27,9 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.TextCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -152,7 +155,7 @@ public class ButterGramPluginSettingsActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return !"header".equals(rows.get(holder.getAdapterPosition()).optString("type"));
+            return holder.getItemViewType() != 0;
         }
 
         @Override
@@ -160,39 +163,49 @@ public class ButterGramPluginSettingsActivity extends BaseFragment {
             return rows.size();
         }
 
+        @Override
+        public int getItemViewType(int position) {
+            String type = rows.get(position).optString("type");
+            if ("header".equals(type)) {
+                return 0;
+            } else if ("switch".equals(type)) {
+                return 1;
+            }
+            return "button".equals(type) ? 3 : 2; // 2 = text value, 3 = button
+        }
+
         @NonNull
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            TextView view = new TextView(context);
-            view.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            view.setGravity(Gravity.CENTER_VERTICAL);
-            view.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(14), AndroidUtilities.dp(20), AndroidUtilities.dp(14));
+            View view;
+            if (viewType == 0) {
+                view = new HeaderCell(context);
+            } else if (viewType == 1) {
+                view = new TextCheckCell(context);
+            } else {
+                view = new TextCell(context); // text value (2) and button (3)
+            }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
         }
 
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-            TextView view = (TextView) holder.itemView;
             JSONObject row = rows.get(position);
             String type = row.optString("type");
             String title = row.optString("title");
+            boolean divider = position + 1 < rows.size() && !"header".equals(rows.get(position + 1).optString("type"));
+            Object v = value(row);
             if ("header".equals(type)) {
-                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
-                view.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
-                view.setText(title);
+                ((HeaderCell) holder.itemView).setText(title);
+            } else if ("switch".equals(type)) {
+                ((TextCheckCell) holder.itemView).setTextAndCheck(title, v instanceof Boolean && (Boolean) v, divider);
+            } else if ("text".equals(type)) {
+                ((TextCell) holder.itemView).setTextAndValue(title, v == null ? "" : String.valueOf(v), divider);
             } else {
-                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                view.setTextColor(Theme.getColor("button".equals(type) ? Theme.key_windowBackgroundWhiteBlueText : Theme.key_windowBackgroundWhiteBlackText));
-                Object v = value(row);
-                if ("switch".equals(type)) {
-                    boolean on = v instanceof Boolean && (Boolean) v;
-                    view.setText(title + "   " + (on ? "☑" : "☐"));
-                } else if ("text".equals(type)) {
-                    view.setText(title + (v == null || String.valueOf(v).isEmpty() ? "" : ": " + v));
-                } else {
-                    view.setText(title);
-                }
+                TextCell cell = (TextCell) holder.itemView;
+                cell.setText(title, divider);
+                cell.setColors(-1, Theme.key_windowBackgroundWhiteBlueText4);
             }
         }
     }

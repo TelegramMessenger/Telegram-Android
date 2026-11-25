@@ -62,6 +62,8 @@ public final class ButterGramPlugins implements NotificationCenter.NotificationC
         public String author = "";
         public String description = "";
         public String main = "main.py";
+        /** "packShortName/index" of a sticker or emoji pack, or a single emoji character. */
+        public String icon = "";
         public final ArrayList<String> permissions = new ArrayList<>();
         public boolean enabled;
         public String error;
@@ -145,6 +147,7 @@ public final class ButterGramPlugins implements NotificationCenter.NotificationC
             info.author = o.optString("author", "");
             info.description = o.optString("description", "");
             info.main = o.optString("main", "main.py");
+            info.icon = o.optString("icon", "");
             JSONArray perms = o.optJSONArray("permissions");
             if (perms != null) {
                 for (int i = 0; i < perms.length(); i++) {

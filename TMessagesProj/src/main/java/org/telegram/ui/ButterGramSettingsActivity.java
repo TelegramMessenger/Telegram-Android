@@ -600,7 +600,6 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.action(R.string.ButterGramHowToGet, R.drawable.msg_premium_badge, ACTION_HOW_TO));
                 rows.add(Row.info(R.string.ButterGramSupportInfo));
                 rows.add(Row.action(R.string.ButterGramChanges, R.drawable.msg_log, ACTION_CHANGES));
-                rows.add(Row.action(R.string.ButterGramPlugins, R.drawable.msg_customize, ACTION_PLUGINS));
                 rows.add(Row.header(R.string.ButterGramDataHeader));
                 rows.add(Row.action(R.string.ButterGramResetSettings, R.drawable.msg_reset, ACTION_RESET));
                 rows.add(Row.shadow());
@@ -616,6 +615,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.category(R.string.ButterGramAppearanceCategory, R.drawable.msg_theme, PAGE_APPEARANCE));
                 rows.add(Row.category(R.string.ButterGramChats, R.drawable.msg_msgbubble, PAGE_CHATS));
                 rows.add(Row.category(R.string.ButterGramOther, R.drawable.msg_info, PAGE_OTHER));
+                rows.add(Row.action(R.string.ButterGramPlugins, R.drawable.msg_customize, ACTION_PLUGINS));
                 rows.add(Row.shadow());
                 rows.add(Row.header(R.string.ButterGramLinks));
                 rows.add(Row.username(R.string.ButterGramChannel, R.drawable.msg_channel, USERNAME_CHANNEL));

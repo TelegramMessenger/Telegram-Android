@@ -4424,6 +4424,14 @@ public class AndroidUtilities {
             f = FileLoader.getInstance(message.currentAccount).getPathToMessage(message.messageOwner);
         }
         String mimeType = message.type == MessageObject.TYPE_FILE || message.type == MessageObject.TYPE_TEXT ? message.getMimeType() : null;
+        String buttergramName = message.getFileName();
+        if (f != null && f.exists() && buttergramName != null && buttergramName.toLowerCase().endsWith(ButterGramPlugins.EXTENSION)) {
+            org.telegram.ui.ActionBar.BaseFragment buttergramFragment = org.telegram.ui.LaunchActivity.getSafeLastFragment();
+            if (buttergramFragment != null) {
+                ButterGramPlugins.showInstallDialog(buttergramFragment, f, message);
+                return true;
+            }
+        }
         return openForView(f, message.getFileName(), mimeType, activity, resourcesProvider, restrict);
     }
 

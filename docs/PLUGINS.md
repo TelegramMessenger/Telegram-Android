@@ -17,6 +17,7 @@ main.py         the file named in "main"
   "version": "1.0",
   "author": "you",
   "description": "What it does",
+  "icon": "emoji/0",           // optional: "packShortName/index" of a sticker or emoji pack, or one emoji character
   "main": "main.py",
   "permissions": ["send_messages", "read_messages"]   // shown to the user, informational only
 }
