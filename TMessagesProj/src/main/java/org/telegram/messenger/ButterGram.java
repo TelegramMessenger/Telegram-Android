@@ -237,6 +237,7 @@ public final class ButterGram {
     public static final int OFFICIAL_TEAM = 2;
     public static final int OFFICIAL_SUPPORTER = 3;
     public static final int OFFICIAL_SUPPORTERS_GROUP = 4;
+    public static final int OFFICIAL_PLUGINS = 5;
 
     /** Build date of this ButterGram version, yyyymmdd. */
     public static final String MOD_VERSION = "20261123";
@@ -244,11 +245,26 @@ public final class ButterGram {
     /** Chat ids (without -100) of the supporters group with early builds. Fill in once the group exists. */
     private static final long[] SUPPORTERS_GROUPS = {5591272129L};
 
+    /** Channels that publish safe plugins: they get the plugins badge and count as a trusted plugin source. */
+    private static final long[] PLUGIN_CHANNELS = {5890165557L};
+
+    public static boolean isPluginChannel(long id) {
+        for (long v : PLUGIN_CHANNELS) {
+            if (v == Math.abs(id)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static final long[] OFFICIAL_CHANNELS = {4392732376L, 4372744306L};
     private static final long[] TEAM_USERS = {5074845818L};
 
     public static int officialKind(boolean user, long id) {
         if (!user) {
+            if (isPluginChannel(id)) {
+                return OFFICIAL_PLUGINS;
+            }
             for (long v : SUPPORTERS_GROUPS) {
                 if (v == Math.abs(id)) {
                     return OFFICIAL_SUPPORTERS_GROUP;
@@ -275,6 +291,10 @@ public final class ButterGram {
         int kind = officialKind(user, id);
         if (kind == OFFICIAL_NONE) {
             return null;
+        }
+        if (kind == OFFICIAL_PLUGINS) {
+            android.graphics.drawable.Drawable p = androidx.core.content.ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.buttergram_plugins);
+            return p != null ? p.mutate() : null;
         }
         if (kind == OFFICIAL_SUPPORTERS_GROUP) {
             android.graphics.drawable.Drawable g = androidx.core.content.ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.buttergram_supporter);
@@ -345,6 +365,9 @@ public final class ButterGram {
                 }
             }
             return LocaleController.formatString(R.string.ButterGramTeamMember, nick == null ? "" : nick);
+        }
+        if (kind == OFFICIAL_PLUGINS) {
+            return LocaleController.getString(R.string.ButterGramPluginsChannelText);
         }
         if (kind == OFFICIAL_SUPPORTERS_GROUP) {
             return LocaleController.getString(R.string.ButterGramSupportersGroupText);

@@ -425,6 +425,7 @@
     <string name="ButterGramPluginsTrustedSource">Доверенный источник</string>
     <string name="ButterGramPluginsEnableAfter">Включить после установки</string>
     <string name="ButterGramPluginsDeleteConfirm">Удалить плагин и его настройки?</string>
+    <string name="ButterGramPluginsChannelText">Этот канал выпускает безопасные плагины для ButterGram.</string>
     <string name="ButterGramSwipeAction">Действие свайпом</string>
     <string name="ButterGramSwipeReply">Ответить</string>
     <string name="ButterGramSwipeForward">Переслать</string>

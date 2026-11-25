@@ -327,16 +327,9 @@ public final class ButterGramPlugins implements NotificationCenter.NotificationC
         f.delete();
     }
 
-    /** Channels whose add-ons are shown as "Trusted source". Ids are channel ids without the -100 prefix. */
-    private static final long[] TRUSTED_CHANNELS = {5890165557L};
-
+    /** Channels with the plugins badge (see ButterGram.PLUGIN_CHANNELS) are shown as "Trusted source". */
     public static boolean isTrustedChannel(long channelId) {
-        for (long id : TRUSTED_CHANNELS) {
-            if (id == Math.abs(channelId)) {
-                return true;
-            }
-        }
-        return false;
+        return ButterGram.isPluginChannel(channelId);
     }
 
     /** True when the file was posted in a trusted channel or forwarded from one. */
