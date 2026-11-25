@@ -50,19 +50,21 @@ jobs:
           BUTTERGRAM_PLUGINS: '1'
         run: ./gradlew --no-daemon :TMessagesProj_AppStandalone:assembleAfatStandalone --stacktrace
 
-      # A release gives a direct APK link (no zip wrapper), which is easier to download on a phone.
-      - name: Publish the APK as a pre-release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: plugins-${{ github.run_number }}
-          name: ButterGram with plugins #${{ github.run_number }}
-          prerelease: true
-          files: TMessagesProj_AppStandalone/build/outputs/apk/**/*.apk
-          fail_on_unmatched_files: true
-
       - uses: actions/upload-artifact@v4
         with:
           name: ButterGram-plugins-apk
           path: TMessagesProj_AppStandalone/build/outputs/apk/**/*.apk
           compression-level: 0
           if-no-files-found: error
+
+      # A release gives a direct APK link (no zip wrapper). It must never fail the build, the artifact above is the fallback.
+      - name: Publish the APK as a pre-release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=$(find TMessagesProj_AppStandalone/build/outputs/apk -name '*.apk' | head -n 1)
+          echo "APK: $APK ($(du -h "$APK" | cut -f1))"
+          gh release create "plugins-${{ github.run_number }}" "$APK#ButterGram-plugins.apk" \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease \
+            --title "ButterGram with plugins #${{ github.run_number }}" --notes "Build with the Python plugin engine."
