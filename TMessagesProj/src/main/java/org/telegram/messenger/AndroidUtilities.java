@@ -4288,7 +4288,7 @@ public class AndroidUtilities {
         }
         if (f != null && f.exists()) {
             if (parentFragment != null && f.getName().toLowerCase().endsWith(ButterGramPlugins.EXTENSION)) {
-                ButterGramPlugins.showInstallDialog(parentFragment, f, message.getDocumentName());
+                ButterGramPlugins.showInstallDialog(parentFragment, f, message);
                 return;
             }
             if (parentFragment != null && f.getName().toLowerCase().endsWith("attheme")) {

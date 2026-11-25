@@ -11836,6 +11836,10 @@
     <string name="ButterGramPluginsOn">Running</string>
     <string name="ButterGramPluginsOff">Disabled</string>
     <string name="ButterGramPluginsNotRunning">Not running</string>
+    <string name="ButterGramPluginsVersion">Version %1$s</string>
+    <string name="ButterGramPluginsUnknownSource">Unknown source</string>
+    <string name="ButterGramPluginsTrustedSource">Trusted source</string>
+    <string name="ButterGramPluginsEnableAfter">Enable after install</string>
     <string name="ButterGramSwipeAction">Swipe action</string>
     <string name="ButterGramSwipeReply">Reply</string>
     <string name="ButterGramSwipeForward">Forward</string>

@@ -8,7 +8,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.ButterGramPluginInstallSheet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -322,52 +324,59 @@ public final class ButterGramPlugins implements NotificationCenter.NotificationC
         f.delete();
     }
 
-    /** Called from the chat when the user taps a downloaded .baddon file. */
-    public static void showInstallDialog(BaseFragment fragment, File file, String displayName) {
+    /** Channels whose add-ons are shown as "Trusted source". Ids are channel ids without the -100 prefix. */
+    private static final long[] TRUSTED_CHANNELS = {5890165557L};
+
+    public static boolean isTrustedChannel(long channelId) {
+        for (long id : TRUSTED_CHANNELS) {
+            if (id == Math.abs(channelId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** True when the file was posted in a trusted channel or forwarded from one. */
+    public static boolean isTrusted(MessageObject message) {
+        if (message == null || message.messageOwner == null) {
+            return false;
+        }
+        long dialogId = message.getDialogId();
+        if (dialogId < 0 && isTrustedChannel(dialogId)) {
+            return true;
+        }
+        TLRPC.MessageFwdHeader fwd = message.messageOwner.fwd_from;
+        if (fwd != null && fwd.from_id instanceof TLRPC.TL_peerChannel) {
+            return isTrustedChannel(((TLRPC.TL_peerChannel) fwd.from_id).channel_id);
+        }
+        return false;
+    }
+
+    /** Called from the chat when the user taps a downloaded .baddon file, or with message == null for a picked file. */
+    public static void showInstallDialog(BaseFragment fragment, File file, MessageObject message) {
         if (fragment == null || fragment.getParentActivity() == null) {
             return;
         }
         Info info = peek(file);
-        String lang = LocaleController.getString(R.string.ButterGramPluginsWarning);
-        AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
         if (info == null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
             builder.setTitle(LocaleController.getString(R.string.ButterGramPlugins));
             builder.setMessage(LocaleController.getString(R.string.ButterGramPluginsBad));
             builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
             fragment.showDialog(builder.create());
             return;
         }
-        StringBuilder text = new StringBuilder();
-        text.append(info.name);
-        if (!TextUtils.isEmpty(info.version)) {
-            text.append(" ").append(info.version);
+        ButterGramPluginInstallSheet.show(fragment, file, info, isTrusted(message));
+    }
+
+    public static void installAndReport(BaseFragment fragment, File file, boolean enable) {
+        InstallResult r = install(file);
+        if (r.info == null) {
+            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.error, String.valueOf(r.error)).show();
+            return;
         }
-        if (!TextUtils.isEmpty(info.author)) {
-            text.append("\n").append(LocaleController.getString(R.string.ButterGramPluginsAuthor)).append(": ").append(info.author);
-        }
-        if (!TextUtils.isEmpty(info.description)) {
-            text.append("\n\n").append(info.description);
-        }
-        if (!info.permissions.isEmpty()) {
-            text.append("\n\n").append(LocaleController.getString(R.string.ButterGramPluginsPermissions)).append(": ").append(TextUtils.join(", ", info.permissions));
-        }
-        text.append("\n\n").append(lang);
-        if (!isEngineAvailable()) {
-            text.append("\n\n").append(LocaleController.getString(R.string.ButterGramPluginsNoEngine));
-        }
-        builder.setTitle(LocaleController.getString(R.string.ButterGramPluginsInstall));
-        builder.setMessage(text.toString());
-        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-        builder.setPositiveButton(LocaleController.getString(R.string.ButterGramPluginsInstallButton), (d, w) -> {
-            InstallResult r = install(file);
-            if (r.info == null) {
-                BulletinFactory.of(fragment).createSimpleBulletin(R.raw.error, String.valueOf(r.error)).show();
-                return;
-            }
-            setEnabled(r.info.id, true);
-            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.info, LocaleController.getString(R.string.ButterGramPluginsInstalled)).show();
-        });
-        fragment.showDialog(builder.create());
+        setEnabled(r.info.id, enable);
+        BulletinFactory.of(fragment).createSimpleBulletin(R.raw.info, LocaleController.getString(R.string.ButterGramPluginsInstalled)).show();
     }
 
     // ---------------------------------------------------------------- run

@@ -134,7 +134,7 @@ public class ButterGramPluginsActivity extends BaseFragment {
                     out.write(buf, 0, n);
                 }
             }
-            ButterGramPlugins.showInstallDialog(this, tmp, tmp.getName());
+            ButterGramPlugins.showInstallDialog(this, tmp, null);
         } catch (Throwable t) {
             FileLog.e(t);
         }

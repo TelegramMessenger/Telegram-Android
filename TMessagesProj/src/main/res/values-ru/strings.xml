@@ -420,6 +420,10 @@
     <string name="ButterGramPluginsOn">Работает</string>
     <string name="ButterGramPluginsOff">Выключен</string>
     <string name="ButterGramPluginsNotRunning">Не запущен</string>
+    <string name="ButterGramPluginsVersion">Версия %1$s</string>
+    <string name="ButterGramPluginsUnknownSource">Неизвестный источник</string>
+    <string name="ButterGramPluginsTrustedSource">Доверенный источник</string>
+    <string name="ButterGramPluginsEnableAfter">Включить после установки</string>
     <string name="ButterGramSwipeAction">Действие свайпом</string>
     <string name="ButterGramSwipeReply">Ответить</string>
     <string name="ButterGramSwipeForward">Переслать</string>
