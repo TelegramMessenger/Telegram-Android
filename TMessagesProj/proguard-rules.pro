@@ -85,3 +85,8 @@
 # Use -keep to explicitly keep any other classes shrinking would remove
 #-dontoptimize
 #-dontobfuscate
+# ButterGram add-ons: reached from Python (Chaquopy) and by reflection
+-keep class org.telegram.messenger.ButterGramPluginApi { *; }
+-keep class org.telegram.messenger.ButterGramPlugins { *; }
+-keep class org.telegram.messenger.ButterGramPlugins$* { *; }
+-keep class org.telegram.messenger.ButterGramPyEngine { *; }

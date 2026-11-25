@@ -1,11 +1,20 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
+    // ButterGram add-ons (.baddon) need the Chaquopy Python plugin. It is only pulled in for builds that ask for it:
+    //   ./gradlew -PbuttergramPlugins ...   or   BUTTERGRAM_PLUGINS=1
+    def withPlugins = project.hasProperty('buttergramPlugins') || System.getenv('BUTTERGRAM_PLUGINS') == '1'
     repositories {
         mavenCentral()
         google()
         maven { url 'https://developer.huawei.com/repo/' }
+        if (withPlugins) {
+            maven { url 'https://chaquo.com/maven' }
+        }
     }
     dependencies {
+        if (withPlugins) {
+            classpath 'com.chaquo.python:gradle:16.1.0'
+        }
         classpath 'com.android.tools.build:gradle:8.13.2'
         classpath 'com.google.gms:google-services:4.5.0'
         classpath 'com.huawei.agconnect:agcp:1.9.1.301'

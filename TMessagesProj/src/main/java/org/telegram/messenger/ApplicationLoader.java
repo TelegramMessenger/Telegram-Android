@@ -194,6 +194,7 @@ public class ApplicationLoader extends Application {
         }
         applicationInited = true;
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
+        ButterGramPlugins.start();
 
         try {
             LocaleController.getInstance(); //TODO improve

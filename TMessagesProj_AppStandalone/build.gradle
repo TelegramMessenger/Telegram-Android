@@ -1,3 +1,5 @@
+def buttergramPlugins = project.hasProperty('buttergramPlugins') || System.getenv('BUTTERGRAM_PLUGINS') == '1'
+
 apply plugin: 'com.android.application'
 apply plugin: 'org.telegram.build-app-plugin'
 
@@ -135,7 +137,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 23
+        minSdkVersion buttergramPlugins ? 24 : 23 // Chaquopy needs API 24
         targetSdkVersion 36
         versionName APP_VERSION_NAME
         ndkVersion "27.2.12479018"
@@ -164,3 +166,15 @@ android {
 }
 
 apply plugin: 'com.google.gms.google-services'
+
+if (buttergramPlugins) {
+    apply plugin: 'com.chaquo.python'
+    android {
+        defaultConfig {
+            python {
+                version "3.11"
+            }
+        }
+        sourceSets.main.java.srcDir 'src/plugins/java'
+    }
+}

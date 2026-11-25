@@ -1,0 +1,55 @@
+name: Build ButterGram APK with plugins
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set own Telegram API credentials
+        env:
+          API_ID: ${{ secrets.TG_API_ID }}
+          API_HASH: ${{ secrets.TG_API_HASH }}
+        run: |
+          if ! [[ "$API_ID" =~ ^[0-9]+$ ]] || ! [[ "$API_HASH" =~ ^[0-9a-f]{32}$ ]]; then
+            echo "::error::Add repository secrets TG_API_ID (number) and TG_API_HASH (32 hex chars) from my.telegram.org"
+            exit 1
+          fi
+          F=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          sed -i "s/public static int APP_ID = [0-9]*;/public static int APP_ID = ${API_ID};/" "$F"
+          sed -i "s/public static String APP_HASH = \"[0-9a-f]*\";/public static String APP_HASH = \"${API_HASH}\";/" "$F"
+          grep -c "APP_ID = ${API_ID};" "$F"
+
+      - name: Install Android SDK components
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        env:
+          BUTTERGRAM_PLUGINS: '1'
+        run: ./gradlew --no-daemon :TMessagesProj_AppStandalone:assembleAfatStandalone --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ButterGram-plugins-apk
+          path: TMessagesProj_AppStandalone/build/outputs/apk/**/*.apk
+          if-no-files-found: error

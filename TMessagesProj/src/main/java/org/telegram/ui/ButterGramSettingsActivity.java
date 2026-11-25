@@ -83,6 +83,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
     private static final int ACTION_HOW_TO = 10;
     private static final int ACTION_RESET = 11;
     private static final int ACTION_CHANGES = 12;
+    private static final int ACTION_PLUGINS = 13;
 
     private static final int[] DELETED_COLORS = {
         0xFFE53935, 0xFFFB8C00, 0xFFFDD835, 0xFF43A047, 0xFF1E88E5, 0xFF8E24AA, 0xFF9E9E9E, 0xFFFFFFFF
@@ -599,6 +600,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.action(R.string.ButterGramHowToGet, R.drawable.msg_premium_badge, ACTION_HOW_TO));
                 rows.add(Row.info(R.string.ButterGramSupportInfo));
                 rows.add(Row.action(R.string.ButterGramChanges, R.drawable.msg_log, ACTION_CHANGES));
+                rows.add(Row.action(R.string.ButterGramPlugins, R.drawable.msg_customize, ACTION_PLUGINS));
                 rows.add(Row.header(R.string.ButterGramDataHeader));
                 rows.add(Row.action(R.string.ButterGramResetSettings, R.drawable.msg_reset, ACTION_RESET));
                 rows.add(Row.shadow());
@@ -730,6 +732,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 break;
             case ACTION_CHANGES:
                 presentFragment(new ButterGramChangesActivity());
+                break;
+            case ACTION_PLUGINS:
+                presentFragment(new ButterGramPluginsActivity());
                 break;
             case ACTION_HOW_TO:
                 ButterGramSupportSheet.show(this, null, null);

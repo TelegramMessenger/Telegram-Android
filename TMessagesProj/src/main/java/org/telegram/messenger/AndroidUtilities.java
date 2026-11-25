@@ -4287,6 +4287,10 @@ public class AndroidUtilities {
             f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToMessage(message.messageOwner);
         }
         if (f != null && f.exists()) {
+            if (parentFragment != null && f.getName().toLowerCase().endsWith(ButterGramPlugins.EXTENSION)) {
+                ButterGramPlugins.showInstallDialog(parentFragment, f, message.getDocumentName());
+                return;
+            }
             if (parentFragment != null && f.getName().toLowerCase().endsWith("attheme")) {
                 Theme.ThemeInfo themeInfo = Theme.applyThemeFile(f, message.getDocumentName(), null, true);
                 if (themeInfo != null) {
