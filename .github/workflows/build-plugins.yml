@@ -7,6 +7,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,8 +50,19 @@ jobs:
           BUTTERGRAM_PLUGINS: '1'
         run: ./gradlew --no-daemon :TMessagesProj_AppStandalone:assembleAfatStandalone --stacktrace
 
+      # A release gives a direct APK link (no zip wrapper), which is easier to download on a phone.
+      - name: Publish the APK as a pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: plugins-${{ github.run_number }}
+          name: ButterGram with plugins #${{ github.run_number }}
+          prerelease: true
+          files: TMessagesProj_AppStandalone/build/outputs/apk/**/*.apk
+          fail_on_unmatched_files: true
+
       - uses: actions/upload-artifact@v4
         with:
           name: ButterGram-plugins-apk
           path: TMessagesProj_AppStandalone/build/outputs/apk/**/*.apk
+          compression-level: 0
           if-no-files-found: error
