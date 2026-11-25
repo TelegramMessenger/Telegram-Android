@@ -11812,6 +11812,15 @@
     <string name="ButterGramProfileFullBg">Profile colour on the whole page</string>
     <string name="ButterGramProfileGifts">Gift bubbles around the avatar</string>
     <string name="ButterGramProfileInfo">The profile colour tints the page behind the cards (gift info sheets are not affected). Collectible gifts float around the avatar, pinned ones first, then the rest until the free spots run out.</string>
+    <string name="ButterGramTypingHeader">Typing and media</string>
+    <string name="ButterGramMentionComma">Comma after a mention</string>
+    <string name="ButterGramEmojiSuggest">Emoji suggestion tap</string>
+    <string name="ButterGramEmojiSuggestReplace">Replace the word</string>
+    <string name="ButterGramEmojiSuggestAfter">Insert after the word</string>
+    <string name="ButterGramEmojiSuggestAfterSpace">Insert after, with a space</string>
+    <string name="ButterGramRememberCamera">Remember the camera for video messages</string>
+    <string name="ButterGramFastTransfer">Faster downloads</string>
+    <string name="ButterGramFastTransferInfo">Faster downloads use larger parts and more parallel requests (Telegram\'s own experimental mode). Uploads of big files already use large parts.</string>
     <string name="ButterGramSwipeAction">Swipe action</string>
     <string name="ButterGramSwipeReply">Reply</string>
     <string name="ButterGramSwipeForward">Forward</string>

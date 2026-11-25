@@ -396,6 +396,15 @@
     <string name="ButterGramProfileFullBg">Цвет профиля на всю страницу</string>
     <string name="ButterGramProfileGifts">Пузырьки с подарками вокруг аватарки</string>
     <string name="ButterGramProfileInfo">Цвет профиля подкрашивает страницу за карточками (окна с информацией о подарке не затрагиваются). Коллекционные подарки летают вокруг аватарки: сначала закреплённые, потом остальные, пока есть свободные места.</string>
+    <string name="ButterGramTypingHeader">Ввод и медиа</string>
+    <string name="ButterGramMentionComma">Запятая после упоминания</string>
+    <string name="ButterGramEmojiSuggest">Тап по подсказке эмодзи</string>
+    <string name="ButterGramEmojiSuggestReplace">Заменить слово</string>
+    <string name="ButterGramEmojiSuggestAfter">Вставить после слова</string>
+    <string name="ButterGramEmojiSuggestAfterSpace">Вставить после, с пробелом</string>
+    <string name="ButterGramRememberCamera">Помнить камеру для видеосообщений</string>
+    <string name="ButterGramFastTransfer">Быстрая загрузка</string>
+    <string name="ButterGramFastTransferInfo">Быстрая загрузка использует более крупные части и больше параллельных запросов (экспериментальный режим самого Telegram). Большие файлы при отправке и так идут крупными частями.</string>
     <string name="ButterGramSwipeAction">Действие свайпом</string>
     <string name="ButterGramSwipeReply">Ответить</string>
     <string name="ButterGramSwipeForward">Переслать</string>

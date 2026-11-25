@@ -568,6 +568,12 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.header(R.string.ButterGramSendHeader));
                 rows.add(Row.choice(R.string.ButterGramUndoSend, SharedSettings.buttergramUndoSend, new int[]{0, 3, 5, 10, 15}, undoLabels()));
                 rows.add(Row.info(R.string.ButterGramUndoInfo));
+                rows.add(Row.header(R.string.ButterGramTypingHeader));
+                rows.add(Row.check(R.string.ButterGramMentionComma, SharedSettings.buttergramMentionComma));
+                rows.add(Row.choice(R.string.ButterGramEmojiSuggest, SharedSettings.buttergramEmojiSuggestMode, new int[]{0, 1, 2}, new String[]{LocaleController.getString(R.string.ButterGramEmojiSuggestReplace), LocaleController.getString(R.string.ButterGramEmojiSuggestAfter), LocaleController.getString(R.string.ButterGramEmojiSuggestAfterSpace)}));
+                rows.add(Row.check(R.string.ButterGramRememberCamera, SharedSettings.buttergramRememberCamera));
+                rows.add(Row.check(R.string.ButterGramFastTransfer, SharedSettings.buttergramFastTransfer));
+                rows.add(Row.info(R.string.ButterGramFastTransferInfo));
                 rows.add(Row.header(R.string.ButterGramGesturesHeader));
                 rows.add(Row.choice(R.string.ButterGramSwipeAction, SharedSettings.buttergramSwipeAction, new int[]{0, 1, 2, 3}, swipeLabels()));
                 rows.add(Row.category(R.string.ButterGramMenuTitle, R.drawable.msg_list, PAGE_MENU));

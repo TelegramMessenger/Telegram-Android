@@ -7487,7 +7487,7 @@ public class ChatActivity extends BaseFragment implements
                 } else {
                     String username = ChatObject.getPublicUsername(chat);
                     if (username != null) {
-                        chatActivityEnterView.replaceWithText(start, len, "@" + username + " ", false);
+                        chatActivityEnterView.replaceWithText(start, len, "@" + username + (org.telegram.utils.settings.SharedSettings.buttergramMentionComma.get() ? ", " : " "), false);
                     }
                 }
             } else if (object instanceof TLRPC.User) {
@@ -7496,10 +7496,10 @@ public class ChatActivity extends BaseFragment implements
                     searchUserMessages(user, null);
                 } else {
                     if (UserObject.getPublicUsername(user) != null) {
-                        chatActivityEnterView.replaceWithText(start, len, "@" + UserObject.getPublicUsername(user) + " ", false);
+                        chatActivityEnterView.replaceWithText(start, len, "@" + UserObject.getPublicUsername(user) + (org.telegram.utils.settings.SharedSettings.buttergramMentionComma.get() ? ", " : " "), false);
                     } else {
                         String name = UserObject.getFirstName(user, false);
-                        Spannable spannable = new SpannableString(name + " ");
+                        Spannable spannable = new SpannableString(name + (org.telegram.utils.settings.SharedSettings.buttergramMentionComma.get() ? ", " : " "));
                         spannable.setSpan(new URLSpanUserMention("" + user.id, 3), 0, spannable.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         chatActivityEnterView.replaceWithText(start, len, spannable, false);
                     }
@@ -7593,6 +7593,11 @@ public class ChatActivity extends BaseFragment implements
             } else if (object instanceof MediaDataController.KeywordResult) {
                 String code = ((MediaDataController.KeywordResult) object).emoji;
                 chatActivityEnterView.addEmojiToRecent(code);
+                // ButterGram: what a tap on an emoji suggestion does (0 replace, 1 insert after, 2 insert after with a space)
+                final int suggestMode = org.telegram.utils.settings.SharedSettings.buttergramEmojiSuggestMode.get();
+                final int insStart = suggestMode == 0 ? start : start + len;
+                final int insLen = suggestMode == 0 ? len : 0;
+                final String insPrefix = suggestMode == 2 ? " " : "";
                 if (code != null && code.startsWith("animated_")) {
                     try {
                         Paint.FontMetricsInt fontMetrics = null;
@@ -7611,12 +7616,12 @@ public class ChatActivity extends BaseFragment implements
                             span = new AnimatedEmojiSpan(documentId, fontMetrics);
                         }
                         emoji.setSpan(span, 0, emoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        chatActivityEnterView.replaceWithText(start, len, emoji, false);
+                        chatActivityEnterView.replaceWithText(insStart, insLen, insPrefix.isEmpty() ? emoji : new android.text.SpannableStringBuilder(insPrefix).append(emoji), false);
                     } catch (Exception ignore) {
-                        chatActivityEnterView.replaceWithText(start, len, code, true);
+                        chatActivityEnterView.replaceWithText(insStart, insLen, insPrefix + code, true);
                     }
                 } else {
-                    chatActivityEnterView.replaceWithText(start, len, code, true);
+                    chatActivityEnterView.replaceWithText(insStart, insLen, insPrefix + code, true);
                 }
                 mentionContainer.updateVisibility(false);
             }

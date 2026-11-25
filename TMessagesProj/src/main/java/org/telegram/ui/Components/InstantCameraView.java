@@ -144,7 +144,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     private ImageView muteImageView;
     private float progress;
     private CameraInfo selectedCamera;
-    private boolean isFrontface = true;
+    private boolean isFrontface = !(org.telegram.utils.settings.SharedSettings.buttergramRememberCamera.get() && org.telegram.utils.settings.SharedSettings.buttergramCameraBack.get());
     private volatile boolean cameraReady;
     private AnimatorSet muteAnimation;
     private TLRPC.InputFile file;
@@ -737,7 +737,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         selectedCamera = null;
         if (!fromPaused) {
             if (!useCamera2) {
-                isFrontface = true;
+                isFrontface = !(org.telegram.utils.settings.SharedSettings.buttergramRememberCamera.get() && org.telegram.utils.settings.SharedSettings.buttergramCameraBack.get());
             }
             updateFlash();
             recordedTime = 0;
@@ -1166,6 +1166,9 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             }
         }
         isFrontface = !isFrontface;
+        if (org.telegram.utils.settings.SharedSettings.buttergramRememberCamera.get()) {
+            org.telegram.utils.settings.SharedSettings.buttergramCameraBack.set(!isFrontface);
+        }
         updateFlash();
         if (useCamera2) {
             if (bothCameras) {

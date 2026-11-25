@@ -196,6 +196,22 @@ public final class SharedSettings {
     public static final BooleanSetting buttergramProfileFullBg =
         BooleanSetting.of("buttergram_profile_full_bg", true);
 
+    public static final BooleanSetting buttergramFastTransfer =
+        BooleanSetting.of("buttergram_fast_transfer", true);
+
+    public static final BooleanSetting buttergramMentionComma =
+        BooleanSetting.of("buttergram_mention_comma", false);
+
+    // 0 = replace the typed word, 1 = insert after it, 2 = insert after it with a space
+    public static final IntSetting buttergramEmojiSuggestMode =
+        IntSetting.of("buttergram_emoji_suggest_mode", 0);
+
+    public static final BooleanSetting buttergramRememberCamera =
+        BooleanSetting.of("buttergram_remember_camera", false);
+
+    public static final BooleanSetting buttergramCameraBack =
+        BooleanSetting.of("buttergram_camera_back", false);
+
     // seconds the text message is held back with an "Undo" button, 0 = off
     public static final IntSetting buttergramUndoSend =
         IntSetting.of("buttergram_undo_send", 0);
