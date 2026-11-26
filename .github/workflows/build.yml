@@ -9,6 +9,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,8 +46,26 @@ jobs:
       - name: Build APK
         run: ./gradlew --no-daemon :TMessagesProj_AppStandalone:assembleAfatStandalone --stacktrace
 
+      - name: Name the APK
+        run: |
+          APK=$(find TMessagesProj_AppStandalone/build/outputs/apk -name '*.apk' | head -n 1)
+          mkdir -p dist
+          cp "$APK" dist/ButterGram_LiteV.apk
+          ls -la dist
+
       - uses: actions/upload-artifact@v4
         with:
-          name: ButterGram-apk
-          path: TMessagesProj_AppStandalone/build/outputs/apk/**/*.apk
+          name: ButterGram_LiteV
+          path: dist/ButterGram_LiteV.apk
+          compression-level: 0
           if-no-files-found: error
+
+      # A release gives a direct APK link (no zip wrapper). It must never fail the build, the artifact above is the fallback.
+      - name: Publish the APK as a pre-release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "lite-${{ github.run_number }}" "dist/ButterGram_LiteV.apk" \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease \
+            --title "ButterGram Lite #${{ github.run_number }}" --notes "Lite build: without plugins."
