@@ -336,7 +336,8 @@ public class ButterGramPluginsActivity extends BaseFragment {
         private void applyState(boolean animated) {
             boolean on = info != null && info.enabled;
             float content = on ? 1f : 0.55f;
-            boolean showSettings = on && info != null && ButterGramPlugins.isLoaded(info.id);
+            boolean showSettings = on;
+            settingsButton.animate().cancel();
             if (animated) {
                 for (View v : new View[]{icon, title, meta, description}) {
                     v.animate().alpha(content).setDuration(250).start();

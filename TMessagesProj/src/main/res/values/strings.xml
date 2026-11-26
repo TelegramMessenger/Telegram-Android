@@ -11812,6 +11812,13 @@
     <string name="ButterGramProfileFullBg">Profile colour on the whole page</string>
     <string name="ButterGramLiveBubbles">Live bubbles: drag and throw the gifts</string>
     <string name="ButterGramProfileGifts">Gift bubbles around the avatar</string>
+    <string name="ButterGramChatLockMenu">Lock chat</string>
+    <string name="ButterGramChatUnlockMenu">Remove chat lock</string>
+    <string name="ButterGramChatLockedToast">Chat is locked with biometrics</string>
+    <string name="ButterGramChatUnlockedToast">Chat lock removed</string>
+    <string name="ButterGramChatLockNoSecurity">Set up a screen lock or fingerprint on your phone first</string>
+    <string name="ButterGramChatLockedTitle">Chat is locked</string>
+    <string name="ButterGramChatUnlockButton">Unlock</string>
     <string name="ButterGramProfileInfo">The profile colour tints the page behind the cards (gift info sheets are not affected). Pinned collectible gifts float around the avatar.</string>
     <string name="ButterGramTypingHeader">Typing and media</string>
     <string name="ButterGramMentionComma">Comma after a mention</string>

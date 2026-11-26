@@ -396,6 +396,13 @@
     <string name="ButterGramProfileFullBg">Цвет профиля на всю страницу</string>
     <string name="ButterGramLiveBubbles">Живые пузыри: тяни и бросай подарки</string>
     <string name="ButterGramProfileGifts">Пузырьки с подарками вокруг аватарки</string>
+    <string name="ButterGramChatLockMenu">Заблокировать чат</string>
+    <string name="ButterGramChatUnlockMenu">Снять защиту с чата</string>
+    <string name="ButterGramChatLockedToast">Чат защищён биометрией</string>
+    <string name="ButterGramChatUnlockedToast">Защита с чата снята</string>
+    <string name="ButterGramChatLockNoSecurity">Сначала настрой блокировку экрана или отпечаток в телефоне</string>
+    <string name="ButterGramChatLockedTitle">Чат заблокирован</string>
+    <string name="ButterGramChatUnlockButton">Разблокировать</string>
     <string name="ButterGramProfileInfo">Цвет профиля подкрашивает страницу за карточками (окна с информацией о подарке не затрагиваются). Закреплённые коллекционные подарки летают вокруг аватарки.</string>
     <string name="ButterGramTypingHeader">Ввод и медиа</string>
     <string name="ButterGramMentionComma">Запятая после упоминания</string>

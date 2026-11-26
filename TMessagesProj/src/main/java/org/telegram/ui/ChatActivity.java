@@ -1795,6 +1795,10 @@ public class ChatActivity extends BaseFragment implements
     private final static int view_as_topics = 59;
 
     private final static int search = 40;
+    private final static int buttergram_lock = 9301;
+    private android.widget.FrameLayout buttergramLockOverlay;
+    private ActionBarMenuSubItem buttergramLockItem;
+    private boolean buttergramLockAuthRunning;
 
     private final static int topic_close = 60;
     private final static int open_forum = 61;
@@ -4083,6 +4087,8 @@ public class ChatActivity extends BaseFragment implements
                     getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of("/help", dialog_id, null, null, null, false, null, null, null, true, 0, 0, null, false));
                 } else if (id == bot_settings) {
                     getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of("/settings", dialog_id, null, null, null, false, null, null, null, true, 0, 0, null, false));
+                } else if (id == buttergram_lock) {
+                    buttergramToggleLock();
                 } else if (id == search) {
                     openSearchWithText(isSupportedTags() ? "" : null);
                 } else if (id == translate) {
@@ -4493,6 +4499,8 @@ public class ChatActivity extends BaseFragment implements
             if (searchItem != null) {
                 headerItem.lazilyAddSubItem(search, R.drawable.msg_search, LocaleController.getString(R.string.Search));
             }
+            buttergramLockItem = headerItem.lazilyAddSubItem(buttergram_lock, R.drawable.msg_secret, LocaleController.getString(
+                    org.telegram.messenger.ButterGramChatLock.isLocked(dialog_id) ? R.string.ButterGramChatUnlockMenu : R.string.ButterGramChatLockMenu));
             if (ChatObject.isBoostSupported(currentChat) && (getUserConfig().isPremium() || ChatObject.isBoosted(chatInfo) || ChatObject.hasAdminRights(currentChat))) {
                 RLottieDrawable drawable = new RLottieDrawable(R.raw.boosts, dp(24), dp(24));
                 headerItem.lazilyAddSubItem(boost_group, drawable, LocaleController.getString(ChatObject.isChannelAndNotMegaGroup(currentChat) ? R.string.BoostingBoostChannelMenu : R.string.BoostingBoostGroupMenu));
@@ -30758,9 +30766,91 @@ public class ChatActivity extends BaseFragment implements
 
     Bulletin.Delegate bulletinDelegate;
 
+    private void buttergramToggleLock() {
+        final boolean now = !org.telegram.messenger.ButterGramChatLock.isLocked(dialog_id);
+        if (now && !org.telegram.messenger.ButterGramChatLock.canAuthenticate(getParentActivity())) {
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.ButterGramChatLockNoSecurity)).show();
+            return;
+        }
+        org.telegram.messenger.ButterGramChatLock.setLocked(dialog_id, now);
+        if (now) {
+            org.telegram.messenger.ButterGramChatLock.markOpen(dialog_id);
+        }
+        if (buttergramLockItem != null) {
+            buttergramLockItem.setText(LocaleController.getString(now ? R.string.ButterGramChatUnlockMenu : R.string.ButterGramChatLockMenu));
+        }
+        BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString(now ? R.string.ButterGramChatLockedToast : R.string.ButterGramChatUnlockedToast)).show();
+    }
+
+    private void buttergramCheckLock() {
+        if (!org.telegram.messenger.ButterGramChatLock.needsAuth(dialog_id)) {
+            org.telegram.messenger.ButterGramChatLock.markOpen(dialog_id);
+            return;
+        }
+        if (getParentActivity() == null || !(fragmentView instanceof android.view.ViewGroup)) {
+            return;
+        }
+        if (buttergramLockOverlay == null) {
+            final Context context = getParentActivity();
+            final android.widget.FrameLayout overlay = new android.widget.FrameLayout(context);
+            overlay.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            overlay.setClickable(true);
+            final android.widget.LinearLayout box = new android.widget.LinearLayout(context);
+            box.setOrientation(android.widget.LinearLayout.VERTICAL);
+            box.setGravity(android.view.Gravity.CENTER);
+            final android.widget.ImageView icon = new android.widget.ImageView(context);
+            icon.setImageResource(R.drawable.msg_secret);
+            icon.setColorFilter(new android.graphics.PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteGrayIcon), android.graphics.PorterDuff.Mode.SRC_IN));
+            box.addView(icon, LayoutHelper.createLinear(56, 56, android.view.Gravity.CENTER_HORIZONTAL));
+            final android.widget.TextView text = new android.widget.TextView(context);
+            text.setText(LocaleController.getString(R.string.ButterGramChatLockedTitle));
+            text.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 18);
+            text.setTypeface(AndroidUtilities.bold());
+            text.setGravity(android.view.Gravity.CENTER);
+            box.addView(text, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, android.view.Gravity.CENTER_HORIZONTAL, 0, 14, 0, 0));
+            final android.widget.TextView unlock = new android.widget.TextView(context);
+            unlock.setText(LocaleController.getString(R.string.ButterGramChatUnlockButton));
+            unlock.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+            unlock.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 15);
+            unlock.setTypeface(AndroidUtilities.bold());
+            unlock.setGravity(android.view.Gravity.CENTER);
+            unlock.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(22), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
+            unlock.setOnClickListener(v -> buttergramAskUnlock());
+            box.addView(unlock, LayoutHelper.createLinear(200, 44, android.view.Gravity.CENTER_HORIZONTAL, 0, 22, 0, 0));
+            final android.widget.TextView close = new android.widget.TextView(context);
+            close.setText(LocaleController.getString(R.string.Close));
+            close.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
+            close.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 15);
+            close.setGravity(android.view.Gravity.CENTER);
+            close.setOnClickListener(v -> finishFragment());
+            box.addView(close, LayoutHelper.createLinear(200, 44, android.view.Gravity.CENTER_HORIZONTAL, 0, 6, 0, 0));
+            overlay.addView(box, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, android.view.Gravity.CENTER));
+            buttergramLockOverlay = overlay;
+            ((android.view.ViewGroup) fragmentView).addView(overlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
+        buttergramLockOverlay.setVisibility(View.VISIBLE);
+        buttergramAskUnlock();
+    }
+
+    private void buttergramAskUnlock() {
+        if (buttergramLockAuthRunning || getParentActivity() == null) {
+            return;
+        }
+        buttergramLockAuthRunning = true;
+        org.telegram.messenger.ButterGramChatLock.authenticate(getParentActivity(), LocaleController.getString(R.string.ButterGramChatLockedTitle), () -> {
+            buttergramLockAuthRunning = false;
+            org.telegram.messenger.ButterGramChatLock.markOpen(dialog_id);
+            if (buttergramLockOverlay != null) {
+                buttergramLockOverlay.setVisibility(View.GONE);
+            }
+        }, () -> buttergramLockAuthRunning = false);
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        buttergramCheckLock();
         buttergramScreenshot.start(this);
         buttergramUpdateBadge();
         buttergramRefreshRightAvatar(false);
@@ -30988,6 +31078,7 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onPause() {
         super.onPause();
+        org.telegram.messenger.ButterGramChatLock.markClosed(dialog_id);
         buttergramScreenshot.stop();
         buttergramKeyboardWasOpen = chatActivityEnterView != null && chatActivityEnterView.isKeyboardVisible();
         scrolling = false;
