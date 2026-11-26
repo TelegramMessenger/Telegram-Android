@@ -591,6 +591,9 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.check(R.string.ButterGramMarkDeleted, SharedSettings.buttergramMarkDeleted));
                 rows.add(Row.colorPicker(R.string.ButterGramDeletedColor, currentDeletedColorName()));
                 rows.add(Row.info(R.string.ButterGramSaveDeletedInfo));
+                rows.add(Row.header(R.string.ButterGramPrivacyHeader));
+                rows.add(Row.check(R.string.ButterGramSaveSecret, SharedSettings.buttergramSaveSecretMedia));
+                rows.add(Row.info(R.string.ButterGramSaveSecretInfo));
                 rows.add(Row.header(R.string.ButterGramDetailsHeader));
                 rows.add(Row.check(R.string.ButterGramExactTime, SharedSettings.buttergramExactTime));
                 rows.add(Row.check(R.string.ButterGramShowIds, SharedSettings.buttergramShowIds));

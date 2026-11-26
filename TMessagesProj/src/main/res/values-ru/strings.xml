@@ -403,6 +403,10 @@
     <string name="ButterGramChatLockNoSecurity">Сначала настрой блокировку экрана или отпечаток в телефоне</string>
     <string name="ButterGramChatLockedTitle">Чат заблокирован</string>
     <string name="ButterGramChatUnlockButton">Разблокировать</string>
+    <string name="ButterGramPrivacyHeader">Приватность</string>
+    <string name="ButterGramSaveSecret">Сохранять исчезающие медиа</string>
+    <string name="ButterGramSaveSecretInfo">Когда ты открываешь фото, видео, голосовое или кружок с таймером или «одноразовое», копия сохраняется в галерею. Файл нужно открыть (он скачается) хотя бы раз. Чтобы закрыть чат отпечатком или экраном блокировки, открой меню чата → «Заблокировать чат».</string>
+    <string name="ButterGramSecretSaved">Копия исчезающего медиа сохранена</string>
     <string name="ButterGramProfileInfo">Цвет профиля подкрашивает страницу за карточками (окна с информацией о подарке не затрагиваются). Закреплённые коллекционные подарки летают вокруг аватарки.</string>
     <string name="ButterGramTypingHeader">Ввод и медиа</string>
     <string name="ButterGramMentionComma">Запятая после упоминания</string>
