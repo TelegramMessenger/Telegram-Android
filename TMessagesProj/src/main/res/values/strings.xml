@@ -11812,7 +11812,7 @@
     <string name="ButterGramProfileFullBg">Profile colour on the whole page</string>
     <string name="ButterGramLiveBubbles">Live bubbles: drag and throw the gifts</string>
     <string name="ButterGramProfileGifts">Gift bubbles around the avatar</string>
-    <string name="ButterGramProfileInfo">The profile colour tints the page behind the cards (gift info sheets are not affected). Collectible gifts float around the avatar, pinned ones first, then the rest until the free spots run out.</string>
+    <string name="ButterGramProfileInfo">The profile colour tints the page behind the cards (gift info sheets are not affected). Pinned collectible gifts float around the avatar.</string>
     <string name="ButterGramTypingHeader">Typing and media</string>
     <string name="ButterGramMentionComma">Comma after a mention</string>
     <string name="ButterGramEmojiSuggest">Emoji suggestion tap</string>
