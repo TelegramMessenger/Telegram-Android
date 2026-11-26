@@ -424,6 +424,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        buttergramCenterTexts();
         canvas.save();
         final float s = bounce.getScale(.02f);
         canvas.scale(s, s, getPivotX(), getHeight() - ActionBar.getCurrentActionBarHeight() / 2f);
@@ -762,6 +763,43 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         setClipChildren(false);
     }
 
+    private float buttergramPillCenter = Float.NaN;
+    private boolean buttergramCentered;
+
+    /** ButterGram: ActionBar reports where the title pill really is (in ActionBar coordinates). */
+    public void setButtergramPillCenter(float x) {
+        buttergramPillCenter = x;
+    }
+
+    /** Centres title and subtitle on the real pill every frame, so stale layouts cannot shift them. */
+    private void buttergramCenterTexts() {
+        final boolean on = glassMode && !Float.isNaN(buttergramPillCenter)
+                && org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get()
+                && avatarImageView.getVisibility() != VISIBLE;
+        if (!on) {
+            if (buttergramCentered) {
+                buttergramCentered = false;
+                titleTextView.setTranslationX(0);
+                if (subtitleTextView != null) {
+                    subtitleTextView.setTranslationX(0);
+                }
+            }
+            return;
+        }
+        buttergramCentered = true;
+        final float center = buttergramPillCenter - getX();
+        final SimpleTextView[] views = {titleTextView, subtitleTextView};
+        for (SimpleTextView v : views) {
+            if (v == null || v.getVisibility() == GONE) {
+                continue;
+            }
+            final float tx = center - v.getExactWidthIncludeDrawables() / 2f - v.getLeft();
+            if (Math.abs(v.getTranslationX() - tx) > 0.5f) {
+                v.setTranslationX(tx);
+            }
+        }
+    }
+
     private boolean glassMode;
     public void setGlassMode() {
         if (titleTextView != null) {
@@ -784,17 +822,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         avatarImageView.layout(1 + lp, 1 + viewTop, 1 + lp + avatarImageView.getMeasuredWidth(), 1 + viewTop + avatarImageView.getMeasuredHeight());
         int l = lp + (avatarImageView.getVisibility() == VISIBLE ? dp(glassMode ? 49.66f : 55) : dp(glassMode ? 13 : 1)) + rightAvatarPadding;
         SimpleTextView titleTextLargerCopyView = this.titleTextLargerCopyView.get();
-        // ButterGram: centre each line inside the pill (pill centre in local coordinates = visualWidth / 2 - 3dp)
-        int titleL = l, subtitleL = l;
-        if (glassMode && org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get() && avatarImageView.getVisibility() != VISIBLE) {
-            final int centerX = lp + getVisualWidth() / 2 - dp(3);
-            final int minL = lp + dp(13);
-            titleL = Math.max(minL, centerX - (int) (titleTextView.getExactWidthIncludeDrawables() / 2f));
-            final SimpleTextView st = subtitleTextView;
-            if (st != null) {
-                subtitleL = Math.max(minL, centerX - (int) (st.getExactWidthIncludeDrawables() / 2f));
-            }
-        }
+        final int titleL = l, subtitleL = l;
         if (getSubtitleTextView().getVisibility() != GONE) {
             titleTextView.layout(titleL, viewTop + dp(1.66f) - titleTextView.getPaddingTop(), titleL + titleTextView.getMeasuredWidth(), viewTop + titleTextView.getTextHeight() + dp(1.66f) - titleTextView.getPaddingTop() + titleTextView.getPaddingBottom());
             if (titleTextLargerCopyView != null) {
