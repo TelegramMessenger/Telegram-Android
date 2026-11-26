@@ -11819,7 +11819,6 @@
     <string name="ButterGramChatLockNoSecurity">Set up a screen lock or fingerprint on your phone first</string>
     <string name="ButterGramChatLockedTitle">Chat is locked</string>
     <string name="ButterGramChatUnlockButton">Unlock</string>
-    <string name="ButterGramPrivacyHeader">Privacy</string>
     <string name="ButterGramSaveSecret">Save self-destructing media</string>
     <string name="ButterGramSaveSecretInfo">When you open a timed or view-once photo, video, voice or round message, a copy is saved to your gallery. The file has to be opened (and downloaded) at least once. To lock a chat behind your fingerprint or screen lock, use the chat menu → Lock chat.</string>
     <string name="ButterGramSecretSaved">Saved a copy of the disappearing media</string>
