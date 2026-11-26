@@ -569,6 +569,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                 rows.add(Row.info(R.string.ButterGramAppearanceInfo));
                 rows.add(Row.header(R.string.ButterGramProfileHeader));
                 rows.add(Row.check(R.string.ButterGramProfileGifts, SharedSettings.buttergramProfileGifts));
+                rows.add(Row.check(R.string.ButterGramLiveBubbles, SharedSettings.buttergramLiveBubbles));
                 rows.add(Row.info(R.string.ButterGramProfileInfo));
                 rows.add(Row.header(R.string.ButterGramListHeader));
                 rows.add(Row.editTitle(R.string.ButterGramTitleText, SharedSettings.buttergramCustomTitle.get() == null || SharedSettings.buttergramCustomTitle.get().isEmpty() ? "ButterGram" : SharedSettings.buttergramCustomTitle.get()));

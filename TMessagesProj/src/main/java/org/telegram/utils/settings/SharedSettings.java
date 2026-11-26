@@ -193,6 +193,9 @@ public final class SharedSettings {
     public static final BooleanSetting buttergramProfileGifts =
         BooleanSetting.of("buttergram_profile_gifts", true);
 
+    public static final BooleanSetting buttergramLiveBubbles =
+        BooleanSetting.of("buttergram_live_bubbles", true);
+
     public static final BooleanSetting buttergramProfileFullBg =
         BooleanSetting.of("buttergram_profile_full_bg", true);
 

@@ -171,6 +171,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
         public int position = -1;
 
+        // ButterGram live bubbles: offset from the slot, velocity and the slot's last position
+        public float ox, oy, vx, vy, ax, ay;
+        public final float phase = (float) (Math.random() * Math.PI * 2);
+
         public Gift(TL_stars.TL_starGiftUnique gift) {
             id = gift.id;
             document = gift.getDocument();
@@ -216,6 +220,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             animatedFloat = b.animatedFloat;
             particles = b.particles;
             position = b.position;
+            ox = b.ox;
+            oy = b.oy;
+            vx = b.vx;
+            vy = b.vy;
         }
 
         public void draw(
@@ -400,6 +408,12 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         final float ah = Math.max(realH, sz);
 
 
+        final boolean live = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get();
+        final long nowMs = android.os.SystemClock.uptimeMillis();
+        final float dt = lastFrameMs == 0 ? 0.016f : Math.min(0.032f, (nowMs - lastFrameMs) / 1000f);
+        lastFrameMs = nowMs;
+        boolean animating = false;
+
         canvas.save();
         canvas.clipRect(0, 0, getWidth(), expandY);
 
@@ -474,11 +488,47 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 scale = AndroidUtilities.lerp(scale / 2f, scale, collapse);
             }
 
+            if (live && collapse >= 1f && enter >= 1f) {
+                gift.ax = gx;
+                gift.ay = gy;
+                if (gift != dragGift) {
+                    final float t = nowMs / 1000f;
+                    final float tx = (float) Math.sin(t * 0.9f + gift.phase) * dp(4);
+                    final float ty = (float) Math.cos(t * 0.7f + gift.phase * 1.3f) * dp(4);
+                    // underdamped spring towards a slowly wandering target: floaty and bouncy
+                    gift.vx += ((tx - gift.ox) * 55f - gift.vx * 6f) * dt;
+                    gift.vy += ((ty - gift.oy) * 55f - gift.vy * 6f) * dt;
+                    gift.ox += gift.vx * dt;
+                    gift.oy += gift.vy * dt;
+                    final float minX = dp(26), maxX = getWidth() - dp(26);
+                    final float px = gx + gift.ox;
+                    if (px < minX) {
+                        gift.ox = minX - gx;
+                        gift.vx = Math.abs(gift.vx) * 0.6f;
+                    } else if (px > maxX) {
+                        gift.ox = maxX - gx;
+                        gift.vx = -Math.abs(gift.vx) * 0.6f;
+                    }
+                }
+                gx += gift.ox;
+                gy += gift.oy;
+                animating = true;
+            }
+
             gift.draw(canvas, gx, gy, scale, 0, alpha, 1f);
         }
 
         canvas.restore();
+        if (animating) {
+            postInvalidateOnAnimation();
+        }
     }
+
+    private long lastFrameMs;
+    private Gift dragGift;
+    private boolean dragging;
+    private float downX, downY;
+    private long lastMoveTime;
 
     public Gift getGiftUnder(float x, float y) {
         for (int i = 0; i < gifts.size(); ++i) {
@@ -493,28 +543,81 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (!active) return false;
+        final boolean live = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get();
+        final int action = event.getAction();
         final Gift hit = getGiftUnder(event.getX(), event.getY());
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+        boolean handled;
+        if (action == MotionEvent.ACTION_DOWN) {
             pressedGift = hit;
+            dragging = false;
+            downX = event.getX();
+            downY = event.getY();
+            lastMoveTime = event.getEventTime();
             if (pressedGift != null) {
                 pressedGift.bounce.setPressed(true);
+                if (live && getParent() != null) {
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                }
             }
-        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            return pressedGift != null;
+        } else if (action == MotionEvent.ACTION_MOVE) {
+            if (live && pressedGift != null) {
+                final float slop = android.view.ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                if (!dragging && Math.hypot(event.getX() - downX, event.getY() - downY) > slop) {
+                    dragging = true;
+                    dragGift = pressedGift;
+                    pressedGift.bounce.setPressed(false);
+                }
+                if (dragging) {
+                    final Gift g = dragGift;
+                    float nx = event.getX() - g.ax, ny = event.getY() - g.ay;
+                    final float len = (float) Math.hypot(nx, ny), max = dp(120);
+                    if (len > max) {
+                        nx *= max / len;
+                        ny *= max / len;
+                    }
+                    final float d = (event.getEventTime() - lastMoveTime) / 1000f;
+                    if (d > 0.001f) {
+                        g.vx = 0.5f * g.vx + 0.5f * (nx - g.ox) / d;
+                        g.vy = 0.5f * g.vy + 0.5f * (ny - g.oy) / d;
+                    }
+                    lastMoveTime = event.getEventTime();
+                    g.ox = nx;
+                    g.oy = ny;
+                    invalidate();
+                }
+                return true;
+            }
             if (pressedGift != hit && pressedGift != null) {
                 pressedGift.bounce.setPressed(false);
                 pressedGift = null;
             }
-        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            return pressedGift != null;
+        } else if (action == MotionEvent.ACTION_UP) {
+            handled = pressedGift != null;
+            if (dragging && dragGift != null) {
+                final float maxV = dp(2200);
+                dragGift.vx = Math.max(-maxV, Math.min(maxV, dragGift.vx));
+                dragGift.vy = Math.max(-maxV, Math.min(maxV, dragGift.vy));
+                dragGift = null;
+                dragging = false;
+                pressedGift = null;
+                invalidate();
+                return true;
+            }
             if (pressedGift != null) {
                 onGiftClick(pressedGift);
                 pressedGift.bounce.setPressed(false);
                 pressedGift = null;
             }
-        } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+            return handled;
+        } else if (action == MotionEvent.ACTION_CANCEL) {
             if (pressedGift != null) {
                 pressedGift.bounce.setPressed(false);
                 pressedGift = null;
             }
+            dragGift = null;
+            dragging = false;
         }
         return pressedGift != null;
     }

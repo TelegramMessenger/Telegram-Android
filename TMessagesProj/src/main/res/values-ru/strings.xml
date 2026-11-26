@@ -394,6 +394,7 @@
     <string name="ButterGramIosInput">Поле ввода как в iOS (перезайдите в чат)</string>
     <string name="ButterGramProfileHeader">Профиль</string>
     <string name="ButterGramProfileFullBg">Цвет профиля на всю страницу</string>
+    <string name="ButterGramLiveBubbles">Живые пузыри: тяни и бросай подарки</string>
     <string name="ButterGramProfileGifts">Пузырьки с подарками вокруг аватарки</string>
     <string name="ButterGramProfileInfo">Цвет профиля подкрашивает страницу за карточками (окна с информацией о подарке не затрагиваются). Коллекционные подарки летают вокруг аватарки: сначала закреплённые, потом остальные, пока есть свободные места.</string>
     <string name="ButterGramTypingHeader">Ввод и медиа</string>
