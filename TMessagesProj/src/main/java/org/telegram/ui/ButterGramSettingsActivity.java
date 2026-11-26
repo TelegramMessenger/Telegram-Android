@@ -290,6 +290,53 @@ public class ButterGramSettingsActivity extends BaseFragment {
     }
 
     /** A round picture used as a row icon (keeps its own colours, no tint). */
+    /** White glyph on a coloured rounded square, like Telegram's own settings. */
+    private static class TintedIcon extends android.graphics.drawable.Drawable {
+        private static final int[] COLORS = {0xFF4F9DF7, 0xFF5CC26D, 0xFFF29A38, 0xFFE8604C, 0xFF9B6CF0, 0xFF2FBFD0, 0xFFE0689E, 0xFF7A8AA0};
+        private final android.graphics.Paint bg = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.drawable.Drawable glyph;
+
+        TintedIcon(Context context, int res, int seed) {
+            bg.setColor(COLORS[Math.abs(seed) % COLORS.length]);
+            glyph = context.getResources().getDrawable(res).mutate();
+            glyph.setColorFilter(new android.graphics.PorterDuffColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN));
+        }
+
+        @Override
+        public void draw(@NonNull android.graphics.Canvas canvas) {
+            android.graphics.Rect b = getBounds();
+            float r = AndroidUtilities.dp(7);
+            canvas.drawRoundRect(b.left, b.top, b.right, b.bottom, r, r, bg);
+            int pad = AndroidUtilities.dp(3);
+            glyph.setBounds(b.left + pad, b.top + pad, b.right - pad, b.bottom - pad);
+            glyph.draw(canvas);
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return AndroidUtilities.dp(26);
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return AndroidUtilities.dp(26);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            bg.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(android.graphics.ColorFilter colorFilter) {
+        }
+
+        @Override
+        public int getOpacity() {
+            return android.graphics.PixelFormat.TRANSLUCENT;
+        }
+    }
+
     private static class CircleIcon extends android.graphics.drawable.Drawable {
         private final android.graphics.Bitmap bitmap;
         private final android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
@@ -699,7 +746,12 @@ public class ButterGramSettingsActivity extends BaseFragment {
             case ACTION_TOGGLE:
                 if (row.setting != null) {
                     row.setting.toggle();
-                    adapter.notifyItemChanged(position);
+                    RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(position);
+                    if (holder != null && holder.itemView instanceof TextCheckCell) {
+                        ((TextCheckCell) holder.itemView).setChecked(row.setting.get());
+                    } else {
+                        adapter.notifyItemChanged(position);
+                    }
                     invalidatePreviews();
                 }
                 break;
@@ -866,7 +918,7 @@ public class ButterGramSettingsActivity extends BaseFragment {
                     if (row.icon == R.drawable.buttergram_keeper) {
                         ((TextCell) holder.itemView).setTextAndIcon(LocaleController.getString(row.title), new CircleIcon(context, row.icon), divider);
                     } else {
-                        ((TextCell) holder.itemView).setTextAndIcon(LocaleController.getString(row.title), row.icon, divider);
+                        ((TextCell) holder.itemView).setTextAndIcon(LocaleController.getString(row.title), new TintedIcon(context, row.icon, row.title), divider);
                     }
                     break;
                 case TYPE_VALUE:

@@ -121,7 +121,12 @@ public class ButterGramPluginSettingsActivity extends BaseFragment {
             Object v = value(row);
             boolean now = !(v instanceof Boolean && (Boolean) v);
             ButterGramPluginApi.setSetting(pluginId, key, String.valueOf(now));
-            adapter.notifyItemChanged(position);
+            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(position);
+            if (holder != null && holder.itemView instanceof TextCheckCell) {
+                ((TextCheckCell) holder.itemView).setChecked(now);
+            } else {
+                adapter.notifyItemChanged(position);
+            }
             ButterGramPlugins.action(pluginId, key);
         } else if ("text".equals(type)) {
             if (getParentActivity() == null) {

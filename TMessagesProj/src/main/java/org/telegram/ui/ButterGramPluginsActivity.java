@@ -232,9 +232,10 @@ public class ButterGramPluginsActivity extends BaseFragment {
             card.setOrientation(LinearLayout.VERTICAL);
             GradientDrawable bg = new GradientDrawable();
             bg.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            bg.setCornerRadius(dp(18));
+            bg.setCornerRadius(dp(22));
             card.setBackground(bg);
-            card.setPadding(dp(14), dp(14), dp(14), dp(8));
+            card.setPadding(dp(16), dp(16), dp(16), dp(10));
+            card.setElevation(dp(1));
             addView(card, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             FrameLayout top = new FrameLayout(context);
@@ -265,8 +266,11 @@ public class ButterGramPluginsActivity extends BaseFragment {
             top.addView(toggle, LayoutHelper.createFrame(37, 20, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
             top.setOnClickListener(v -> {
                 if (info != null) {
-                    ButterGramPlugins.setEnabled(info.id, !info.enabled);
-                    reload();
+                    boolean now = !info.enabled;
+                    info.enabled = now;
+                    ButterGramPlugins.setEnabled(info.id, now);
+                    toggle.setChecked(now, true);
+                    applyState(true);
                 }
             });
 
@@ -284,21 +288,23 @@ public class ButterGramPluginsActivity extends BaseFragment {
 
             settingsButton = new ImageView(context);
             settingsButton.setImageResource(R.drawable.msg_settings);
-            settingsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.SRC_IN));
+            settingsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText), PorterDuff.Mode.SRC_IN));
             settingsButton.setScaleType(ImageView.ScaleType.CENTER);
+            settingsButton.setBackground(circle(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText)));
             settingsButton.setOnClickListener(v -> {
                 if (info != null) {
                     presentFragment(new ButterGramPluginSettingsActivity(info.id));
                 }
             });
-            actions.addView(settingsButton, LayoutHelper.createFrame(44, 44, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+            actions.addView(settingsButton, LayoutHelper.createFrame(40, 40, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
             deleteButton = new ImageView(context);
             deleteButton.setImageResource(R.drawable.msg_delete);
             deleteButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_text_RedRegular), PorterDuff.Mode.SRC_IN));
             deleteButton.setScaleType(ImageView.ScaleType.CENTER);
+            deleteButton.setBackground(circle(Theme.getColor(Theme.key_text_RedRegular)));
             deleteButton.setOnClickListener(v -> confirmDelete(info));
-            actions.addView(deleteButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
+            actions.addView(deleteButton, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
         }
 
         void bind(ButterGramPlugins.Info info) {
@@ -324,7 +330,36 @@ public class ButterGramPluginsActivity extends BaseFragment {
             description.setText(info.description);
             description.setVisibility(TextUtils.isEmpty(info.description) ? GONE : VISIBLE);
             toggle.setChecked(info.enabled, false);
-            settingsButton.setVisibility(info.enabled && ButterGramPlugins.isLoaded(info.id) ? VISIBLE : INVISIBLE);
+            applyState(false);
+        }
+
+        private void applyState(boolean animated) {
+            boolean on = info != null && info.enabled;
+            float content = on ? 1f : 0.55f;
+            boolean showSettings = on && info != null && ButterGramPlugins.isLoaded(info.id);
+            if (animated) {
+                for (View v : new View[]{icon, title, meta, description}) {
+                    v.animate().alpha(content).setDuration(250).start();
+                }
+                settingsButton.setVisibility(VISIBLE);
+                settingsButton.animate().alpha(showSettings ? 1f : 0f).setDuration(250).start();
+                settingsButton.setEnabled(showSettings);
+            } else {
+                icon.setAlpha(content);
+                title.setAlpha(content);
+                meta.setAlpha(content);
+                description.setAlpha(content);
+                settingsButton.setVisibility(VISIBLE);
+                settingsButton.setAlpha(showSettings ? 1f : 0f);
+                settingsButton.setEnabled(showSettings);
+            }
+        }
+
+        private GradientDrawable circle(int color) {
+            GradientDrawable d = new GradientDrawable();
+            d.setShape(GradientDrawable.OVAL);
+            d.setColor((color & 0x00FFFFFF) | 0x1F000000);
+            return d;
         }
     }
 
