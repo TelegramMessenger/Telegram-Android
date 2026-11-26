@@ -773,7 +773,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
 
     /** Centres title and subtitle on the real pill every frame, so stale layouts cannot shift them. */
     private void buttergramCenterTexts() {
-        final boolean on = glassMode && !Float.isNaN(buttergramPillCenter)
+        final boolean on = !Float.isNaN(buttergramPillCenter)
                 && org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get()
                 && avatarImageView.getVisibility() != VISIBLE;
         if (!on) {

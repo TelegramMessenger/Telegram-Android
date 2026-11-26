@@ -226,6 +226,32 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             vy = b.vy;
         }
 
+        // glass sphere: tinted body, soft rim, specular highlight, shadowed lower edge
+        private void drawBubble(Canvas canvas, float r, float alpha) {
+            bubblePaint.setStyle(Paint.Style.FILL);
+            bubblePaint.setColor(Theme.multAlpha(color, 0.38f * alpha));
+            canvas.drawCircle(0, 0, r, bubblePaint);
+            bubblePaint.setStyle(Paint.Style.STROKE);
+            bubblePaint.setStrokeWidth(dp(1.2f));
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.55f * alpha));
+            canvas.drawCircle(0, 0, r - dp(0.6f), bubblePaint);
+            bubblePaint.setStrokeWidth(dp(2.5f));
+            bubblePaint.setColor(Theme.multAlpha(0xFF000000, 0.14f * alpha));
+            canvas.save();
+            canvas.clipRect(-r, 0, r, r);
+            canvas.drawCircle(0, 0, r - dp(2), bubblePaint);
+            canvas.restore();
+            bubblePaint.setStyle(Paint.Style.FILL);
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.6f * alpha));
+            bubbleRect.set(-r * 0.62f, -r * 0.72f, -r * 0.05f, -r * 0.38f);
+            canvas.save();
+            canvas.rotate(-28, -r * 0.33f, -r * 0.55f);
+            canvas.drawOval(bubbleRect, bubblePaint);
+            canvas.restore();
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.3f * alpha));
+            canvas.drawCircle(r * 0.45f, r * 0.52f, dp(2.2f), bubblePaint);
+        }
+
         public void draw(
                 Canvas canvas,
                 float cx, float cy,
@@ -234,7 +260,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 float gradientAlpha
         ) {
             if (alpha <= 0.0f) return;
-            final float gsz = dp(45);
+            final float gsz = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get() ? dp(52) : dp(45);
             bounds.set(cx - gsz / 2, cy - gsz / 2, cx + gsz / 2, cy + gsz / 2);
             canvas.save();
             canvas.translate(cx, cy);
@@ -247,8 +273,11 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 gradientPaint.setAlpha((int) (0xFF * alpha * gradientAlpha));
                 canvas.drawRect(-gsz / 2.0f, -gsz / 2.0f, gsz / 2.0f, gsz / 2.0f, gradientPaint);
             }
+            if (org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get()) {
+                drawBubble(canvas, gsz * 0.5f, alpha);
+            }
             if (emojiDrawable != null) {
-                final int sz = dp(24);
+                final int sz = dp(28);
                 emojiDrawable.setBounds(-sz / 2, -sz / 2, sz / 2, sz / 2);
                 emojiDrawable.setAlpha((int) (0xFF * alpha));
                 emojiDrawable.draw(canvas);
@@ -256,6 +285,9 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             canvas.restore();
         }
     }
+
+    private final Paint bubblePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF bubbleRect = new RectF();
 
     private StarsController.GiftsList list;
 
