@@ -272,6 +272,7 @@ public class UserConfig extends BaseController {
         if (oldUser != null && newUser != null && oldUser.premium != newUser.premium) {
             AndroidUtilities.runOnUIThread(() -> {
                 getMessagesController().updatePremium(newUser.premium);
+                getConnectionsManager().setUserPremium(isPremium());
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.currentUserPremiumStatusChanged);
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.premiumStatusChangedGlobal);
 
@@ -282,6 +283,7 @@ public class UserConfig extends BaseController {
         } else if (oldUser == null) {
             AndroidUtilities.runOnUIThread(() -> {
                 getMessagesController().updatePremium(newUser.premium);
+                getConnectionsManager().setUserPremium(isPremium());
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.currentUserPremiumStatusChanged);
                 getMediaDataController().loadPremiumPromo(true);
             });
