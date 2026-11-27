@@ -789,18 +789,29 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                 if (subtitleTextView != null) {
                     subtitleTextView.setTranslationX(0);
                 }
+                if (animatedSubtitleTextView != null) {
+                    animatedSubtitleTextView.setTranslationX(0);
+                }
             }
             return;
         }
         buttergramCentered = true;
         buttergramPillHost.getLocationInWindow(buttergramHostLoc);
-        final SimpleTextView[] views = {titleTextView, subtitleTextView};
-        for (SimpleTextView v : views) {
+        final View[] views = {titleTextView, subtitleTextView, animatedSubtitleTextView};
+        for (View v : views) {
             if (v == null || v.getVisibility() == GONE) {
                 continue;
             }
+            final float w;
+            if (v instanceof SimpleTextView) {
+                w = ((SimpleTextView) v).getExactWidth();
+            } else if (v instanceof AnimatedTextView) {
+                w = ((AnimatedTextView) v).getDrawable().getCurrentWidth();
+            } else {
+                continue;
+            }
             v.getLocationInWindow(buttergramLoc);
-            final float desired = buttergramHostLoc[0] + buttergramPillCenter - v.getExactWidthIncludeDrawables() / 2f;
+            final float desired = buttergramHostLoc[0] + buttergramPillCenter - w / 2f;
             final float delta = desired - buttergramLoc[0];
             if (Math.abs(delta) > 0.5f) {
                 v.setTranslationX(v.getTranslationX() + delta);

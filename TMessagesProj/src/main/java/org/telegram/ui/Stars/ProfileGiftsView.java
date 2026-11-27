@@ -185,7 +185,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         public int position = -1;
 
         // ButterGram live bubbles: offset from the slot, velocity and the slot's last position
-        public float ox, oy, vx, vy, ax, ay, st, stv;
+        public float ox, oy, vx, vy, ax, ay, st, stv, sc = 1f;
         public final float phase = (float) (Math.random() * Math.PI * 2);
 
         public Gift(TL_stars.TL_starGiftUnique gift) {
@@ -247,6 +247,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             vy = b.vy;
             st = b.st;
             stv = b.stv;
+            sc = b.sc;
         }
 
         // glass bubble: see-through body that is tinted towards the edge, the gift pattern inside, rim and highlights
@@ -635,6 +636,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 gift.st += gift.stv * dt;
                 gift.st = Math.max(-0.2f, Math.min(0.65f, gift.st));
                 stretch = gift.st;
+                gift.sc += ((gift == dragGift ? 1.5f : 1f) - gift.sc) * Math.min(1f, dt * 10f);
                 final boolean byVelocity = sp > dp(40f);
                 stretchAngle = (float) Math.toDegrees(Math.atan2(byVelocity ? gift.vy : gift.oy, byVelocity ? gift.vx : gift.ox));
 
@@ -655,10 +657,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 canvas.rotate(stretchAngle, gx, gy);
                 canvas.scale(1f + stretch, (float) (1.0 / Math.sqrt(1f + stretch)), gx, gy);
                 canvas.rotate(-stretchAngle, gx, gy);
-                gift.draw(canvas, gx, gy, scale, 0, alpha, 1f);
+                gift.draw(canvas, gx, gy, scale * gift.sc, 0, alpha, 1f);
                 canvas.restore();
             } else {
-                gift.draw(canvas, gx, gy, scale, 0, alpha, 1f);
+                gift.draw(canvas, gx, gy, scale * gift.sc, 0, alpha, 1f);
             }
         }
 
