@@ -185,7 +185,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         public int position = -1;
 
         // ButterGram live bubbles: offset from the slot, velocity and the slot's last position
-        public float ox, oy, vx, vy, ax, ay;
+        public float ox, oy, vx, vy, ax, ay, st, stv;
         public final float phase = (float) (Math.random() * Math.PI * 2);
 
         public Gift(TL_stars.TL_starGiftUnique gift) {
@@ -245,13 +245,15 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             oy = b.oy;
             vx = b.vx;
             vy = b.vy;
+            st = b.st;
+            stv = b.stv;
         }
 
         // glass bubble: see-through body that is tinted towards the edge, the gift pattern inside, rim and highlights
         private void drawBubble(Canvas canvas, float r, float alpha) {
             if (bubbleShader == null) {
                 bubbleShader = new RadialGradient(0, 0, r,
-                        new int[]{Theme.multAlpha(color, 0.05f), Theme.multAlpha(color, 0.2f), Theme.multAlpha(edgeColor, 0.55f)},
+                        new int[]{0x0AFFFFFF, 0x18FFFFFF, Theme.multAlpha(0xFFFFFFFF, 0.20f)},
                         new float[]{0f, 0.62f, 1f}, Shader.TileMode.CLAMP);
                 bubbleFill = new Paint(Paint.ANTI_ALIAS_FLAG);
                 bubbleFill.setShader(bubbleShader);
@@ -264,11 +266,11 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                     patternFilter = new android.graphics.PorterDuffColorFilter(patternColor, android.graphics.PorterDuff.Mode.SRC_IN);
                 }
                 patternDrawable.setColorFilter(patternFilter);
-                patternDrawable.setAlpha((int) (0xFF * 0.55f * alpha));
-                final int ps = dp(9);
+                patternDrawable.setAlpha((int) (0xFF * 0.42f * alpha));
+                final int ps = dp(7);
                 for (int k = 0; k < 6; k++) {
                     final double a = Math.toRadians(k * 60 + 18);
-                    final int px = (int) (Math.cos(a) * r * 0.68f), py = (int) (Math.sin(a) * r * 0.68f);
+                    final int px = (int) (Math.cos(a) * r * 0.64f), py = (int) (Math.sin(a) * r * 0.64f);
                     patternDrawable.setBounds(px - ps / 2, py - ps / 2, px + ps / 2, py + ps / 2);
                     patternDrawable.draw(canvas);
                 }
@@ -276,17 +278,17 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
             bubblePaint.setStyle(Paint.Style.STROKE);
             bubblePaint.setStrokeWidth(dp(1f));
-            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.32f * alpha));
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.38f * alpha));
             canvas.drawCircle(0, 0, r - dp(0.5f), bubblePaint);
             bubblePaint.setStrokeWidth(dp(2f));
-            bubblePaint.setColor(Theme.multAlpha(0xFF000000, 0.10f * alpha));
+            bubblePaint.setColor(Theme.multAlpha(0xFF000000, 0.05f * alpha));
             canvas.save();
             canvas.clipRect(-r, r * 0.1f, r, r);
             canvas.drawCircle(0, 0, r - dp(1.8f), bubblePaint);
             canvas.restore();
 
             bubblePaint.setStyle(Paint.Style.FILL);
-            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.5f * alpha));
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.3f * alpha));
             bubbleRect.set(-r * 0.66f, -r * 0.74f, -r * 0.1f, -r * 0.46f);
             canvas.save();
             canvas.rotate(-30, -r * 0.38f, -r * 0.6f);
@@ -325,7 +327,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 float gradientAlpha
         ) {
             if (alpha <= 0.0f) return;
-            final float gsz = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get() ? dp(46) : dp(45);
+            final float gsz = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get() ? dp(40) : dp(45);
             bounds.set(cx - gsz / 2, cy - gsz / 2, cx + gsz / 2, cy + gsz / 2);
             canvas.save();
             canvas.translate(cx, cy);
@@ -342,7 +344,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 drawBubble(canvas, gsz * 0.5f, alpha);
             }
             if (emojiDrawable != null) {
-                final int sz = dp(28);
+                final int sz = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get() ? dp(25) : dp(28);
                 emojiDrawable.setBounds(-sz / 2, -sz / 2, sz / 2, sz / 2);
                 emojiDrawable.setAlpha((int) (0xFF * alpha));
                 emojiDrawable.draw(canvas);
@@ -521,6 +523,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         float expandScale = expandY / maxExpandY;
         float closedAlpha = Utilities.clamp01((expandY - (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight())) / dp(50));
 
+        if (live) buttergramCollide();
         for (int i = 0; i < gifts.size(); ++i) {
             final Gift gift = gifts.get(i);
             final float enter = gift.animatedFloat.set(1.0f);
@@ -592,11 +595,22 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                     final float tx = (float) Math.sin(t * 0.9f + gift.phase) * dp(4);
                     final float ty = (float) Math.cos(t * 0.7f + gift.phase * 1.3f) * dp(4);
                     // underdamped spring towards a slowly wandering target: floaty and bouncy
-                    gift.vx += ((tx - gift.ox) * 55f - gift.vx * 6f) * dt;
-                    gift.vy += ((ty - gift.oy) * 55f - gift.vy * 6f) * dt;
+                    final float off = (float) Math.hypot(gift.ox, gift.oy);
+                    final float kk = off > dp(24) ? 16f : 50f, cc = off > dp(24) ? 3.4f : 6f;
+                    gift.vx += ((tx - gift.ox) * kk - gift.vx * cc) * dt;
+                    gift.vy += ((ty - gift.oy) * kk - gift.vy * cc) * dt;
                     gift.ox += gift.vx * dt;
                     gift.oy += gift.vy * dt;
-                    final float minX = dp(26), maxX = getWidth() - dp(26);
+                    final float minX = dp(22), maxX = getWidth() - dp(22);
+                    final float minY = dp(22), maxY = Math.max(minY, getHeight() - dp(22));
+                    final float py0 = gy + gift.oy;
+                    if (py0 < minY) {
+                        gift.oy = minY - gy;
+                        gift.vy = Math.abs(gift.vy) * 0.6f;
+                    } else if (py0 > maxY) {
+                        gift.oy = maxY - gy;
+                        gift.vy = -Math.abs(gift.vy) * 0.6f;
+                    }
                     final float px = gx + gift.ox;
                     if (px < minX) {
                         gift.ox = minX - gx;
@@ -612,10 +626,15 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
                 // jelly: the bubble stretches along its motion and while it is pulled
                 final float sp = (float) Math.hypot(gift.vx, gift.vy);
-                stretch = Math.min(0.30f, sp / dp(2800f));
+                final float offLen = (float) Math.hypot(gift.ox, gift.oy);
+                float target = Math.min(0.45f, sp / dp(1800f));
                 if (gift == dragGift) {
-                    stretch = Math.min(0.40f, stretch + Math.min(0.2f, (float) Math.hypot(gift.ox, gift.oy) / dp(450f)));
+                    target = Math.max(target, Math.min(0.6f, offLen / dp(220f)));
                 }
+                gift.stv += ((target - gift.st) * 130f - gift.stv * 7f) * dt;
+                gift.st += gift.stv * dt;
+                gift.st = Math.max(-0.2f, Math.min(0.65f, gift.st));
+                stretch = gift.st;
                 final boolean byVelocity = sp > dp(40f);
                 stretchAngle = (float) Math.toDegrees(Math.atan2(byVelocity ? gift.vy : gift.oy, byVelocity ? gift.vx : gift.ox));
 
@@ -631,10 +650,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 }
             }
 
-            if (stretch > 0.01f) {
+            if (Math.abs(stretch) > 0.01f) {
                 canvas.save();
                 canvas.rotate(stretchAngle, gx, gy);
-                canvas.scale(1f + stretch, 1f - stretch * 0.55f, gx, gy);
+                canvas.scale(1f + stretch, (float) (1.0 / Math.sqrt(1f + stretch)), gx, gy);
                 canvas.rotate(-stretchAngle, gx, gy);
                 gift.draw(canvas, gx, gy, scale, 0, alpha, 1f);
                 canvas.restore();
@@ -646,6 +665,31 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         canvas.restore();
         if (animating) {
             postInvalidateOnAnimation();
+        }
+    }
+
+    private void buttergramCollide() {
+        final float min = dp(40);
+        for (int i = 0; i < gifts.size(); i++) {
+            final Gift a = gifts.get(i);
+            for (int j = i + 1; j < gifts.size(); j++) {
+                final Gift b = gifts.get(j);
+                float dx = (b.ax + b.ox) - (a.ax + a.ox), dy = (b.ay + b.oy) - (a.ay + a.oy);
+                float d = (float) Math.hypot(dx, dy);
+                if (d >= min) continue;
+                if (d < 0.01f) { dx = 1; dy = 0; d = 1; }
+                final float nx = dx / d, ny = dy / d, ov = min - d;
+                final boolean ad = a == dragGift, bd = b == dragGift;
+                final float wa = ad ? 0 : (bd ? 1 : 0.5f), wb = bd ? 0 : (ad ? 1 : 0.5f);
+                a.ox -= nx * ov * wa; a.oy -= ny * ov * wa;
+                b.ox += nx * ov * wb; b.oy += ny * ov * wb;
+                final float rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+                if (rv < 0) {
+                    final float imp = -rv * 0.9f;
+                    if (!ad) { a.vx -= nx * imp * wa * 2; a.vy -= ny * imp * wa * 2; }
+                    if (!bd) { b.vx += nx * imp * wb * 2; b.vy += ny * imp * wb * 2; }
+                }
+            }
         }
     }
 
@@ -695,12 +739,9 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 }
                 if (dragging) {
                     final Gift g = dragGift;
-                    float nx = event.getX() - g.ax, ny = event.getY() - g.ay;
-                    final float len = (float) Math.hypot(nx, ny), max = dp(120);
-                    if (len > max) {
-                        nx *= max / len;
-                        ny *= max / len;
-                    }
+                    final float fx = Math.max(dp(22), Math.min(getWidth() - dp(22), event.getX()));
+                    final float fy = Math.max(dp(22), Math.min(Math.max(dp(22), getHeight() - dp(22)), event.getY()));
+                    float nx = fx - g.ax, ny = fy - g.ay;
                     final float d = (event.getEventTime() - lastMoveTime) / 1000f;
                     if (d > 0.001f) {
                         g.vx = 0.5f * g.vx + 0.5f * (nx - g.ox) / d;
