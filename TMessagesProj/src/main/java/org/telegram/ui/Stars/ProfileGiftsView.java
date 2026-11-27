@@ -9,6 +9,7 @@ import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Path;
 import android.graphics.Paint;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
@@ -135,6 +136,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
         for (Gift gift : gifts) {
             gift.emojiDrawable.addView(this);
+            if (gift.patternDrawable != null) gift.patternDrawable.addView(this);
         }
 
         update();
@@ -148,6 +150,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
         for (Gift gift : gifts) {
             gift.emojiDrawable.removeView(this);
+            if (gift.patternDrawable != null) gift.patternDrawable.removeView(this);
         }
     }
 
@@ -169,6 +172,16 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         public final String slug;
         private StarsReactionsSheet.Particles particles;
 
+        // ButterGram bubbles: pattern symbols, edge colour, cached shaders
+        public TLRPC.Document patternDocument;
+        public long patternDocId;
+        public int patternColor, edgeColor;
+        public AnimatedEmojiDrawable patternDrawable;
+        private RadialGradient glowShader, bubbleShader;
+        private Paint glowPaint, bubbleFill;
+        private final Matrix glowMatrix = new Matrix();
+        private android.graphics.PorterDuffColorFilter patternFilter;
+
         public int position = -1;
 
         // ButterGram live bubbles: offset from the slot, velocity and the slot's last position
@@ -181,6 +194,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             documentId = document == null ? 0 : document.id;
             final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
             color = backdrop.center_color | 0xFF000000;
+            edgeColor = backdrop.edge_color | 0xFF000000;
+            patternColor = backdrop.pattern_color | 0xFF000000;
+            final TL_stars.starGiftAttributePattern pat = findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class);
+            patternDocument = pat != null ? pat.document : null;
             slug = gift.slug;
             initParticles();
         }
@@ -190,6 +207,9 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             document = null;
             documentId = status.document_id;
             color = status.center_color | 0xFF000000;
+            edgeColor = status.edge_color | 0xFF000000;
+            patternColor = status.pattern_color | 0xFF000000;
+            patternDocId = status.pattern_document_id;
             slug = status.slug;
             initParticles();
         }
@@ -216,6 +236,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         public void copy(Gift b) {
             gradient = b.gradient;
             emojiDrawable = b.emojiDrawable;
+            patternDrawable = b.patternDrawable;
             gradientPaint = b.gradientPaint;
             animatedFloat = b.animatedFloat;
             particles = b.particles;
@@ -226,30 +247,74 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             vy = b.vy;
         }
 
-        // glass sphere: tinted body, soft rim, specular highlight, shadowed lower edge
+        // glass bubble: see-through body that is tinted towards the edge, the gift pattern inside, rim and highlights
         private void drawBubble(Canvas canvas, float r, float alpha) {
-            bubblePaint.setStyle(Paint.Style.FILL);
-            bubblePaint.setColor(Theme.multAlpha(color, 0.38f * alpha));
-            canvas.drawCircle(0, 0, r, bubblePaint);
+            if (bubbleShader == null) {
+                bubbleShader = new RadialGradient(0, 0, r,
+                        new int[]{Theme.multAlpha(color, 0.05f), Theme.multAlpha(color, 0.2f), Theme.multAlpha(edgeColor, 0.55f)},
+                        new float[]{0f, 0.62f, 1f}, Shader.TileMode.CLAMP);
+                bubbleFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+                bubbleFill.setShader(bubbleShader);
+            }
+            bubbleFill.setAlpha((int) (0xFF * alpha));
+            canvas.drawCircle(0, 0, r, bubbleFill);
+
+            if (patternDrawable != null) {
+                if (patternFilter == null) {
+                    patternFilter = new android.graphics.PorterDuffColorFilter(patternColor, android.graphics.PorterDuff.Mode.SRC_IN);
+                }
+                patternDrawable.setColorFilter(patternFilter);
+                patternDrawable.setAlpha((int) (0xFF * 0.55f * alpha));
+                final int ps = dp(9);
+                for (int k = 0; k < 6; k++) {
+                    final double a = Math.toRadians(k * 60 + 18);
+                    final int px = (int) (Math.cos(a) * r * 0.68f), py = (int) (Math.sin(a) * r * 0.68f);
+                    patternDrawable.setBounds(px - ps / 2, py - ps / 2, px + ps / 2, py + ps / 2);
+                    patternDrawable.draw(canvas);
+                }
+            }
+
             bubblePaint.setStyle(Paint.Style.STROKE);
-            bubblePaint.setStrokeWidth(dp(1.2f));
-            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.55f * alpha));
-            canvas.drawCircle(0, 0, r - dp(0.6f), bubblePaint);
-            bubblePaint.setStrokeWidth(dp(2.5f));
-            bubblePaint.setColor(Theme.multAlpha(0xFF000000, 0.14f * alpha));
+            bubblePaint.setStrokeWidth(dp(1f));
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.32f * alpha));
+            canvas.drawCircle(0, 0, r - dp(0.5f), bubblePaint);
+            bubblePaint.setStrokeWidth(dp(2f));
+            bubblePaint.setColor(Theme.multAlpha(0xFF000000, 0.10f * alpha));
             canvas.save();
-            canvas.clipRect(-r, 0, r, r);
-            canvas.drawCircle(0, 0, r - dp(2), bubblePaint);
+            canvas.clipRect(-r, r * 0.1f, r, r);
+            canvas.drawCircle(0, 0, r - dp(1.8f), bubblePaint);
             canvas.restore();
+
             bubblePaint.setStyle(Paint.Style.FILL);
-            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.6f * alpha));
-            bubbleRect.set(-r * 0.62f, -r * 0.72f, -r * 0.05f, -r * 0.38f);
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.5f * alpha));
+            bubbleRect.set(-r * 0.66f, -r * 0.74f, -r * 0.1f, -r * 0.46f);
             canvas.save();
-            canvas.rotate(-28, -r * 0.33f, -r * 0.55f);
+            canvas.rotate(-30, -r * 0.38f, -r * 0.6f);
             canvas.drawOval(bubbleRect, bubblePaint);
             canvas.restore();
-            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.3f * alpha));
-            canvas.drawCircle(r * 0.45f, r * 0.52f, dp(2.2f), bubblePaint);
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.28f * alpha));
+            canvas.drawCircle(r * 0.5f, r * 0.5f, dp(1.8f), bubblePaint);
+        }
+
+        // soft glow of the gift's colour on the rim of the avatar, on the side the bubble is
+        private void drawGlow(Canvas canvas, float px, float py, float cx, float cy, float rad, float strength) {
+            if (glowShader == null) {
+                glowShader = new RadialGradient(0, 0, dp(52),
+                        new int[]{Theme.multAlpha(color, 0.95f), Theme.multAlpha(color, 0.38f), 0},
+                        new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
+                glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                glowPaint.setShader(glowShader);
+            }
+            glowMatrix.setTranslate(px, py);
+            glowShader.setLocalMatrix(glowMatrix);
+            glowPaint.setAlpha((int) (0xFF * Math.min(1f, strength)));
+            glowPath.reset();
+            glowPath.addCircle(cx, cy, rad + dp(6), Path.Direction.CW);
+            glowPath.addCircle(cx, cy, rad - dp(4), Path.Direction.CCW);
+            canvas.save();
+            canvas.clipPath(glowPath);
+            canvas.drawCircle(px, py, dp(52), glowPaint);
+            canvas.restore();
         }
 
         public void draw(
@@ -260,7 +325,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 float gradientAlpha
         ) {
             if (alpha <= 0.0f) return;
-            final float gsz = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get() ? dp(52) : dp(45);
+            final float gsz = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get() ? dp(46) : dp(45);
             bounds.set(cx - gsz / 2, cy - gsz / 2, cx + gsz / 2, cy + gsz / 2);
             canvas.save();
             canvas.translate(cx, cy);
@@ -269,7 +334,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             canvas.scale(scale, scale);
             particles.process();
             particles.draw(canvas, color, alpha);
-            if (gradientPaint != null) {
+            if (gradientPaint != null && !org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get()) {
                 gradientPaint.setAlpha((int) (0xFF * alpha * gradientAlpha));
                 canvas.drawRect(-gsz / 2.0f, -gsz / 2.0f, gsz / 2.0f, gsz / 2.0f, gradientPaint);
             }
@@ -288,6 +353,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
     private final Paint bubblePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF bubbleRect = new RectF();
+    private final Path glowPath = new Path();
 
     private StarsController.GiftsList list;
 
@@ -363,9 +429,15 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 } else {
                     g.emojiDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, g.documentId);
                 }
+                if (g.patternDocument != null) {
+                    g.patternDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, g.patternDocument);
+                } else if (g.patternDocId != 0) {
+                    g.patternDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, g.patternDocId);
+                }
                 g.animatedFloat = new AnimatedFloat(this, 0, 320, null);
                 g.animatedFloat.force(0.0f);
                 if (isAttachedToWindow()) {
+                    if (g.patternDrawable != null) g.patternDrawable.addView(this);
                     g.emojiDrawable.addView(this);
                 }
             }
@@ -388,6 +460,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             if (newGift == null) {
                 g.emojiDrawable.removeView(this);
                 g.emojiDrawable = null;
+                if (g.patternDrawable != null) {
+                    g.patternDrawable.removeView(this);
+                    g.patternDrawable = null;
+                }
                 g.gradient = null;
             } else {
                 positions.remove((Object) g.position);
@@ -507,6 +583,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 scale = AndroidUtilities.lerp(scale / 2f, scale, collapse);
             }
 
+            float stretch = 0f, stretchAngle = 0f;
             if (live && collapse >= 1f && enter >= 1f) {
                 gift.ax = gx;
                 gift.ay = gy;
@@ -532,9 +609,38 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 gx += gift.ox;
                 gy += gift.oy;
                 animating = true;
+
+                // jelly: the bubble stretches along its motion and while it is pulled
+                final float sp = (float) Math.hypot(gift.vx, gift.vy);
+                stretch = Math.min(0.30f, sp / dp(2800f));
+                if (gift == dragGift) {
+                    stretch = Math.min(0.40f, stretch + Math.min(0.2f, (float) Math.hypot(gift.ox, gift.oy) / dp(450f)));
+                }
+                final boolean byVelocity = sp > dp(40f);
+                stretchAngle = (float) Math.toDegrees(Math.atan2(byVelocity ? gift.vy : gift.oy, byVelocity ? gift.vx : gift.ox));
+
+                // colour of the background spills onto the avatar rim, stronger the closer the bubble is
+                final float rimR = Math.min(realW, realH) / 2f;
+                final float ddx = gx - realCX, ddy = gy - realCY;
+                final float dist = (float) Math.hypot(ddx, ddy);
+                if (dist > 1f) {
+                    final float near = Utilities.clamp01(1f - (dist - rimR) / dp(150f));
+                    if (near > 0.04f) {
+                        gift.drawGlow(canvas, realCX + ddx / dist * rimR, realCY + ddy / dist * rimR, realCX, realCY, rimR, near * alpha);
+                    }
+                }
             }
 
-            gift.draw(canvas, gx, gy, scale, 0, alpha, 1f);
+            if (stretch > 0.01f) {
+                canvas.save();
+                canvas.rotate(stretchAngle, gx, gy);
+                canvas.scale(1f + stretch, 1f - stretch * 0.55f, gx, gy);
+                canvas.rotate(-stretchAngle, gx, gy);
+                gift.draw(canvas, gx, gy, scale, 0, alpha, 1f);
+                canvas.restore();
+            } else {
+                gift.draw(canvas, gx, gy, scale, 0, alpha, 1f);
+            }
         }
 
         canvas.restore();

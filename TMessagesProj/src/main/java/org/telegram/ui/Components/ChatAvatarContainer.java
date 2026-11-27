@@ -764,18 +764,24 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     }
 
     private float buttergramPillCenter = Float.NaN;
+    private View buttergramPillHost;
     private boolean buttergramCentered;
+    private final int[] buttergramLoc = new int[2];
+    private final int[] buttergramHostLoc = new int[2];
 
-    /** ButterGram: ActionBar reports where the title pill really is (in ActionBar coordinates). */
-    public void setButtergramPillCenter(float x) {
-        buttergramPillCenter = x;
+    /** ButterGram: the ActionBar reports where the title pill really is (centre, in its own coordinates). */
+    public void setButtergramPill(View host, float centerX) {
+        buttergramPillHost = host;
+        buttergramPillCenter = centerX;
     }
 
-    /** Centres title and subtitle on the real pill every frame, so stale layouts cannot shift them. */
+    /**
+     * Centres title and subtitle on the real pill. It works in window coordinates, so margins, translations
+     * and stale layouts cannot throw it off: every frame the text is moved by exactly the missing distance.
+     */
     private void buttergramCenterTexts() {
-        final boolean on = !Float.isNaN(buttergramPillCenter)
-                && org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get()
-                && avatarImageView.getVisibility() != VISIBLE;
+        final boolean on = buttergramPillHost != null && !Float.isNaN(buttergramPillCenter)
+                && org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get();
         if (!on) {
             if (buttergramCentered) {
                 buttergramCentered = false;
@@ -787,15 +793,17 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             return;
         }
         buttergramCentered = true;
-        final float center = buttergramPillCenter - getX();
+        buttergramPillHost.getLocationInWindow(buttergramHostLoc);
         final SimpleTextView[] views = {titleTextView, subtitleTextView};
         for (SimpleTextView v : views) {
             if (v == null || v.getVisibility() == GONE) {
                 continue;
             }
-            final float tx = center - v.getExactWidthIncludeDrawables() / 2f - v.getLeft();
-            if (Math.abs(v.getTranslationX() - tx) > 0.5f) {
-                v.setTranslationX(tx);
+            v.getLocationInWindow(buttergramLoc);
+            final float desired = buttergramHostLoc[0] + buttergramPillCenter - v.getExactWidthIncludeDrawables() / 2f;
+            final float delta = desired - buttergramLoc[0];
+            if (Math.abs(delta) > 0.5f) {
+                v.setTranslationX(v.getTranslationX() + delta);
             }
         }
     }
