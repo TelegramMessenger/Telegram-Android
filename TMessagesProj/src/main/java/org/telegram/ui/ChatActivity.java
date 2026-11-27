@@ -1797,7 +1797,7 @@ public class ChatActivity extends BaseFragment implements
     private final static int search = 40;
     private final static int buttergram_lock = 9301;
     private android.widget.FrameLayout buttergramLockOverlay;
-    private ActionBarMenuSubItem buttergramLockItem;
+    private ActionBarMenuItem.Item buttergramLockItem;
     private boolean buttergramLockAuthRunning;
 
     private final static int topic_close = 60;
