@@ -3600,19 +3600,20 @@ public class LocaleController {
                     for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                         ConnectionsManager.setLangCode(localeInfo.getLangCode());
                     }
-                    FileLog.d("applyRemoteLanguage getLangPack");
-                    TLRPC.TL_langpack_getLangPack req = new TLRPC.TL_langpack_getLangPack();
-                    req.lang_code = localeInfo.getLangCode();
-                    requestId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (TLObject response, TLRPC.TL_error error) -> AndroidUtilities.runOnUIThread(() -> {
-                        finishLangpackRequest(key, request);
-                        if (response != null) {
-                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onRequestDone);
-                        } else {
-                            onRequestDone.run();
-                        }
-                    }), ConnectionsManager.RequestFlagWithoutLogin);
-                    request.token = requestId;
-                }
+                }, ConnectionsManager.RequestFlagWithoutLogin);
+            } else {
+                ConnectionsManager.setLangCode(localeInfo.getLangCode());
+                FileLog.d("applyRemoteLanguage getLangPack");
+                TLRPC.TL_langpack_getLangPack req = new TLRPC.TL_langpack_getLangPack();
+                req.lang_code = localeInfo.getLangCode();
+                requested[0]++;
+                return ConnectionsManager.getInstance(currentAccount).sendRequest(req, (TLObject response, TLRPC.TL_error error) -> {
+                    if (response != null) {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
+                        });
+                    }
+                }, ConnectionsManager.RequestFlagWithoutLogin);
             }
         }
         if (requested[0] == 0 && onDone != null) {
