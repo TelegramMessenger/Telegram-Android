@@ -804,7 +804,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             }
             final float w;
             if (v instanceof SimpleTextView) {
-                w = ((SimpleTextView) v).getExactWidth();
+                w = buttergramTextWidth((SimpleTextView) v);
             } else if (v instanceof AnimatedTextView) {
                 w = ((AnimatedTextView) v).getDrawable().getCurrentWidth();
             } else {
@@ -817,6 +817,24 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                 v.setTranslationX(v.getTranslationX() + delta);
             }
         }
+    }
+
+    /** The width the text really occupies on screen: layout width plus the drawables that were actually drawn. */
+    private float buttergramTextWidth(SimpleTextView v) {
+        float w = v.getTextWidth();
+        final android.graphics.drawable.Drawable l = v.getLeftDrawable();
+        if (l != null) {
+            w += l.getIntrinsicWidth();
+        }
+        final android.graphics.drawable.Drawable r = v.getRightDrawable();
+        if (r != null && !r.getBounds().isEmpty()) {
+            w = Math.max(w, r.getBounds().right);
+        }
+        final android.graphics.drawable.Drawable r2 = v.getRightDrawable2();
+        if (r2 != null && !r2.getBounds().isEmpty()) {
+            w = Math.max(w, r2.getBounds().right);
+        }
+        return w;
     }
 
     private boolean glassMode;
