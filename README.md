@@ -1,90 +1,46 @@
-# Moonbag
+## Telegram messenger for Android
 
-An offline meme-coin trading **game** for Android. Every coin is made up, every price is simulated on
-your phone, and all money is play money. No internet permission, no accounts, no real crypto.
+[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
+This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
 
-## What you can do
+## Creating your Telegram Application
 
-- **Market**: 10 major coins (BTC, ETH, SOL and others) and 12 invented meme coins with live charts,
-  filters and market news (pumps, dumps and the occasional rug pull). All prices are simulated; the major
-  coins only borrow real names and are not market data.
-- **Charts**: line or candlestick view with SMA, EMA and RSI indicators and a price grid; drag to inspect.
-- **Create your own coin**: pay a $2,000 listing fee, pick a name, ticker, icon (or a photo from your gallery),
-  colour and behaviour, and get a
-  numbered listing certificate plus a founder allocation. Your coins live on a thin market: your own trades
-  move the price (a constant-product pool), so a quick buy-and-sell always costs you.
-- **Trade**: buy and sell with a 0.5% fee, see your average buy price and profit per coin.
-- **Portfolio**: net worth chart, allocation bar, holdings and trade history.
-- **Mine**: you start with $0. Tap the moon to earn your first dollars, then buy upgrades
-  (stronger taps, an auto-miner, lucky crits, an offline vault).
-- **Mining farms**: GPU rigs, mining farms, data centers and quantum racks give passive income that
-  keeps growing in price as you buy more.
-- **Staking**: lock coins to earn more of the same coin (0.4%, 0.8% or 1.2% per hour depending on the coin),
-  also while the app is closed (up to 12 hours). Staked coins cannot be sold until unstaked.
-- **Market events**: bull runs, bear markets, meme seasons and flash crashes move the whole market for a
-  while, with a banner on the Market tab.
-- **NFT**: three collections drawn in the app (Pixel Critters, Glow Orbs, Moon Rocks). Minting gives a random
-  rarity, selling costs 2.5%, and on average minting returns less than it costs.
-- **Orders**: limit buys (the money is reserved), limit sells and stop-losses. They fire by themselves,
-  also while the app is closed, and fill at the price of that moment.
-- **Manage your coin**: marketing campaigns (three sizes, with a chance of a sell-off when the hype ends)
-  and token burns (gone for good, with a short burst of hype).
-- **Leaderboard**: 12 invented traders with their own growth and ups and downs. They are not real people;
-  their capital is a fixed function of the days since your game began.
-- **Tutorial**: shown on first launch and available from Settings.
-- **Offline**: the market keeps moving while the app is closed, and the auto-miner keeps earning for as
-  long as the offline vault allows.
-- A home screen widget with your portfolio (as of the last time the app was closed).
-- A wallet-style dark look (Material You colours are optional), light and dark theme, English and Russian.
+We welcome all developers to use our API and source code to create applications on our platform.
+There are several things we require from **all developers** for the moment.
 
-## Wallet (still a game)
+1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
+2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
+3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
+3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
+4. Please remember to publish **your** code too in order to comply with the licences.
 
-Moonbag now looks and behaves like a crypto wallet, but nothing is real: no blockchain, no network access, play money only.
+### API, Protocol documentation
 
-- **Wallet tab**: swipeable wallet cards, Receive, Send, Swap and Earn buttons, and Tokens, NFT and Activity panels.
-- **Several wallets**: create, import, rename, recolour and delete wallets. Each has its own coins; send coins to your other wallet to move them.
-- **Recovery phrase**: twelve words from a 256-word game list (not BIP-39). They only give your wallet its
-  addresses inside the game and control no real funds. Create one, back it up, or restore it from the words.
-- **Four invented networks** (Moonchain, Lunar L2, Orbit, Nova) with their own address formats and fees.
-  Every coin lives on one network. When you create a coin you pick the network (it sets the listing fee).
-- **Build your own blockchain** from $100,000: consensus, block time, throughput, validators, audit, fee level,
-  supply, address format and features. Every setting changes the price. It comes with a native coin.
-- **Send** coins to a saved contact or one of the invented traders; the network fee is paid in play dollars.
-- **Receive**: your address on each network, copy and share, plus a free airdrop every six hours.
-- **Swap**: exchange one coin for another with the fees and price impact shown first.
-- **Browser**: in-game "dapps" (swap, mint hub, miner, launchpad, faucet, leaderboard, analytics, networks)
-  reached by tapping a tile or typing a `moon://` address. It never goes online.
+Telegram API manuals: https://core.telegram.org/api
 
-## How the market works
+MTproto protocol manuals: https://core.telegram.org/mtproto
 
-Each coin follows a mean-reverting random walk (Ornstein-Uhlenbeck on the log price) with its own
-volatility, shifted by a shared market mood, plus rare pumps, dumps and (for risky coins) rug pulls.
-Because the discretisation is exact, a few big steps equal many small ones, which is how the time away is
-simulated. See `game/PriceEngine.kt`.
+### Compilation Guide
 
-## Build
+**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
 
-```
-./gradlew testDebugUnitTest
-./gradlew assembleDebug
-```
+You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android SDK 36.
 
-Requires JDK 17. GitHub Actions builds a debug APK on every push (`.github/workflows/ci.yml`) and a
-release APK when you push a tag like `v1.0.0` (`release.yml`).
+1. Clone the Telegram source code with its submodules:
+   ```bash
+   git clone --recursive --shallow-submodules https://github.com/DrKLO/Telegram.git Telegram
+   ```
+   In case you forgot the `--recursive` flag, change to the `Telegram` directory and run:
+   ```bash
+   git submodule init && git submodule update --init --recursive --depth=1
+   ```
+2. Copy your release.keystore into TMessagesProj/config
+3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
+4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
+5. Open the project in the Studio (note that it should be opened, NOT imported).
+6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
+7. You are ready to compile Telegram.
 
-### Signing release builds
+### Localization
 
-Add these repository secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
-Without them the release APK is signed with the debug key, so it still installs.
-Never commit the `.jks` file.
-
-## Project layout
-
-```
-game/   coins, price engine, trading, clicker, save format (pure Kotlin, unit tested)
-ui/     Jetpack Compose screens: market, portfolio, mine, settings
-```
-
-## License
-
-MIT
+We moved all translations to https://translations.telegram.org/en/android/. Please use it.
