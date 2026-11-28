@@ -254,7 +254,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         private void drawBubble(Canvas canvas, float r, float alpha) {
             if (bubbleShader == null) {
                 bubbleShader = new RadialGradient(0, 0, r,
-                        new int[]{0x0AFFFFFF, 0x18FFFFFF, Theme.multAlpha(0xFFFFFFFF, 0.20f)},
+                        new int[]{Theme.multAlpha(color, 0.10f), Theme.multAlpha(color, 0.20f), Theme.multAlpha(edgeColor, 0.50f)},
                         new float[]{0f, 0.62f, 1f}, Shader.TileMode.CLAMP);
                 bubbleFill = new Paint(Paint.ANTI_ALIAS_FLAG);
                 bubbleFill.setShader(bubbleShader);
@@ -533,6 +533,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
             float gx, gy;
             float delayValue;
+            final int bgPos = gift.position;
 
             switch (gift.position) {
                 case 0: // left
@@ -565,6 +566,15 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                     gy = ay + ah - dp(16);
                     delayValue = 0;
                     break;
+            }
+
+            if (live && enter >= 1f) {
+                // the bubbles slowly orbit the avatar
+                final double th = (nowMs % 3600000L) / 1000.0 * 0.32;
+                final float rx = gx - acx, ry = gy - acy;
+                final float cs = (float) Math.cos(th), sn = (float) Math.sin(th);
+                gx = acx + rx * cs - ry * sn;
+                gy = acy + rx * sn + ry * cs;
             }
 
             final float collapseProgressWithEnter;
