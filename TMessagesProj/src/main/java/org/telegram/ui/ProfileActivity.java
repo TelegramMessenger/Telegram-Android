@@ -5229,6 +5229,25 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         avatarContainer2 = new FrameLayout(context) {
 
             CanvasButton canvasButton;
+            private boolean buttergramGiftTouch;
+
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (giftsView != null && org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get()) {
+                    if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+                        buttergramGiftTouch = giftsView.isGiftAt(ev.getX(), ev.getY());
+                    }
+                    if (buttergramGiftTouch) {
+                        final int act = ev.getAction();
+                        giftsView.dispatchTouchEvent(ev);
+                        if (act == MotionEvent.ACTION_UP || act == MotionEvent.ACTION_CANCEL) {
+                            buttergramGiftTouch = false;
+                        }
+                        return true;
+                    }
+                }
+                return super.dispatchTouchEvent(ev);
+            }
 
             @Override
             protected void dispatchDraw(Canvas canvas) {

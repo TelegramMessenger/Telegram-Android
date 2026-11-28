@@ -711,6 +711,15 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
     private float downX, downY;
     private long lastMoveTime;
 
+    /** ButterGram: true when a visible bubble is under the point (lets the profile route the touch here even over other views). */
+    public boolean isGiftAt(float x, float y) {
+        if (!active || gifts.isEmpty() || getVisibility() != VISIBLE || getAlpha() < 0.5f
+                || expandProgress > 0.01f || collapseProgress < 1f || actionBarProgress > 0.01f) {
+            return false;
+        }
+        return getGiftUnder(x, y) != null;
+    }
+
     public Gift getGiftUnder(float x, float y) {
         for (int i = 0; i < gifts.size(); ++i) {
             if (gifts.get(i).bounds.contains(x, y))
