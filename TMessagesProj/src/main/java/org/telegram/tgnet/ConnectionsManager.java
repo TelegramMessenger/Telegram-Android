@@ -212,7 +212,7 @@ public class ConnectionsManager extends BaseController {
 
     public ConnectionsManager(int instance) {
         super(instance);
-        connectionState = native_getConnectionState(currentAccount);
+        connectionState = ToxicgramRpc.ENABLED ? ConnectionStateConnecting : native_getConnectionState(currentAccount);
         String deviceModel;
         String systemLangCode;
         String langCode;
@@ -300,11 +300,11 @@ public class ConnectionsManager extends BaseController {
     }
 
     public long getCurrentTimeMillis() {
-        return native_getCurrentTimeMillis(currentAccount);
+        return ToxicgramRpc.ENABLED ? System.currentTimeMillis() : native_getCurrentTimeMillis(currentAccount);
     }
 
     public int getCurrentTime() {
-        return native_getCurrentTime(currentAccount);
+        return ToxicgramRpc.ENABLED ? (int)(System.currentTimeMillis()/1000L) : native_getCurrentTime(currentAccount);
     }
 
     public int getCurrentDatacenterId() {
@@ -420,6 +420,10 @@ public class ConnectionsManager extends BaseController {
     }
 
     private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
+        if (ToxicgramRpc.ENABLED) {
+            ToxicgramRpc.send(currentAccount, object, onComplete, onCompleteTimestamp);
+            return;
+        }
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("send request " + object + " with token = " + requestToken);
         }
@@ -646,6 +650,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     public int getConnectionState() {
+        if (ToxicgramRpc.ENABLED) return connectionState;
         if (connectionState == ConnectionStateConnected && isUpdating) {
             return ConnectionStateUpdating;
         }
@@ -657,6 +662,10 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void checkConnection() {
+        if (ToxicgramRpc.ENABLED) {
+            ToxicgramRpc.probe(currentAccount);
+            return;
+        }
         byte selectedStrategy = getIpStrategy();
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("selected ip strategy " + selectedStrategy);
@@ -670,6 +679,11 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, int timezoneOffset, long userId, boolean userPremium, boolean enablePushConnection) {
+        if (ToxicgramRpc.ENABLED) {
+            native_init(currentAccount, version, layer, 0, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, "", "", "", "com.toxicgram.original", timezoneOffset, userId, userPremium, false, false, 0, SharedConfig.measureDevicePerformanceClass());
+            ToxicgramRpc.probe(currentAccount);
+            return;
+        }
         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         final ProxySettings proxySettings = ProxySettings.fromSharedPreferences(preferences);
         if (preferences.getBoolean("proxy_enabled", false) && proxySettings.isValid()) {
@@ -758,10 +772,12 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void resumeNetworkMaybe() {
+        if (ToxicgramRpc.ENABLED) { ToxicgramRpc.probe(currentAccount); return; }
         native_resumeNetwork(currentAccount, true);
     }
 
     public void updateDcSettings() {
+        if (ToxicgramRpc.ENABLED) { ToxicgramRpc.probe(currentAccount); return; }
         native_updateDcSettings(currentAccount);
     }
 
@@ -790,6 +806,12 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void setAppPaused(final boolean value, final boolean byScreenState) {
+        if (ToxicgramRpc.ENABLED) {
+            appPaused = value;
+            ToxicgramRpc.setForeground(currentAccount, !value);
+            if (!value) ToxicgramRpc.probe(currentAccount);
+            return;
+        }
         if (!byScreenState) {
             appPaused = value;
             if (BuildVars.LOGS_ENABLED) {
@@ -861,13 +883,25 @@ public class ConnectionsManager extends BaseController {
     }
 
     public static void onConnectionStateChanged(final int state, final int currentAccount) {
+        // This callback is from native MTProto, not the Toxicgram HTTPS transport.
+        if (ToxicgramRpc.ENABLED) return;
         AndroidUtilities.runOnUIThread(() -> {
             getInstance(currentAccount).connectionState = state;
             AccountInstance.getInstance(currentAccount).getNotificationCenter().postNotificationName(NotificationCenter.didUpdateConnectionState);
         });
     }
 
+    public static void onToxicgramConnectionStateChanged(final int state, final int currentAccount) {
+        AndroidUtilities.runOnUIThread(() -> {
+            ConnectionsManager manager = getInstance(currentAccount);
+            if (manager.connectionState == state) return;
+            manager.connectionState = state;
+            AccountInstance.getInstance(currentAccount).getNotificationCenter().postNotificationName(NotificationCenter.didUpdateConnectionState);
+        });
+    }
+
     public static void onLogout(final int currentAccount) {
+        if (ToxicgramRpc.ENABLED) return;
         AndroidUtilities.runOnUIThread(() -> {
             AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
             if (accountInstance.getUserConfig().getClientUserId() != 0) {
@@ -898,6 +932,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     public static void onRequestNewServerIpAndPort(final int second, final int currentAccount) {
+        if (ToxicgramRpc.ENABLED) return;
         Utilities.globalQueue.postRunnable(() -> {
             boolean networkOnline = ApplicationLoader.isNetworkOnline();
             Utilities.stageQueue.postRunnable(() -> {
@@ -1076,6 +1111,8 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void setIsUpdating(final boolean value) {
+        // MTProto difference state is not implemented by the REST API.
+        if (ToxicgramRpc.ENABLED) return;
         AndroidUtilities.runOnUIThread(() -> {
             if (isUpdating == value) {
                 return;

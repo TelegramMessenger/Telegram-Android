@@ -73,6 +73,12 @@ public class ImageLocation {
         if (document == null) {
             return null;
         }
+        String localGift = org.telegram.tgnet.ToxicgramRpc.giftAnimationPath(document.id);
+        if (localGift != null) {
+            ImageLocation local = getForPath(localGift);
+            local.imageType = FileLoader.IMAGE_TYPE_LOTTIE;
+            return local;
+        }
         ImageLocation imageLocation = new ImageLocation();
         imageLocation.document = document;
         imageLocation.key = document.key;
@@ -125,6 +131,11 @@ public class ImageLocation {
     }
 
     public static ImageLocation getForPhoto(TLRPC.PhotoSize photoSize, TLRPC.Photo photo) {
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED && photo != null) {
+            String path = org.telegram.tgnet.ToxicgramRpc.avatarPath(UserConfig.selectedAccount, photo.id);
+            if (path != null) return getForPath(path);
+            if (photo.id >= 2000000000000000000L && photo.id < 2000000000000000000L + (1L << 60)) return null;
+        }
         if (photoSize instanceof TLRPC.TL_photoStrippedSize || photoSize instanceof TLRPC.TL_photoPathSize) {
             ImageLocation imageLocation = new ImageLocation();
             imageLocation.photoSize = photoSize;
@@ -165,6 +176,12 @@ public class ImageLocation {
     }
 
     public static ImageLocation getForUser(int currentAccount, TLRPC.User user, int type) {
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+            if (user == null || !(user.photo instanceof TLRPC.TL_userProfilePhoto)) return null;
+            if (type != TYPE_SMALL && type != TYPE_BIG) return null;
+            String path = org.telegram.tgnet.ToxicgramRpc.avatarPath(currentAccount, user.photo.photo_id);
+            return path != null ? getForPath(path) : null;
+        }
         if (user == null || user.photo == null) {
             return null;
         }

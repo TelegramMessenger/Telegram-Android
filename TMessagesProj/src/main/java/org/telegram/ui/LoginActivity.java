@@ -342,7 +342,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     private boolean checkPermissions = true;
     private boolean checkShowPermissions = true;
     private boolean newAccount;
-    private boolean syncContacts = true;
+    private boolean syncContacts = false;
     private boolean testBackend = false;
 
     @ActivityMode
@@ -1278,7 +1278,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 builder.setMessage(getString(R.string.InvalidPhoneNumber));
             }
         }
-        builder.setNeutralButton(getString("BotHelp", R.string.BotHelp), (dialog, which) -> {
+        if (!org.telegram.tgnet.ToxicgramRpc.ENABLED) builder.setNeutralButton(getString("BotHelp", R.string.BotHelp), (dialog, which) -> {
             try {
                 PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
                 String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
@@ -1682,7 +1682,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         ConnectionsManager.getInstance(currentAccount).setUserId(res.user.id);
         UserConfig.getInstance(currentAccount).clearConfig();
         MessagesController.getInstance(currentAccount).cleanup();
-        UserConfig.getInstance(currentAccount).syncContacts = syncContacts;
+        UserConfig.getInstance(currentAccount).syncContacts = false;
         UserConfig.getInstance(currentAccount).setCurrentUser(res.user);
         UserConfig.getInstance(currentAccount).saveConfig(true);
         MessagesStorage.getInstance(currentAccount).cleanup(true);
@@ -3078,7 +3078,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ChooseCountry", R.string.ChooseCountry));
                 needHideProgress(false);
                 return;
-            } else if (countryState == COUNTRY_STATE_INVALID && !BuildVars.DEBUG_VERSION && !(TEST_BACKEND_IN_STORE && !BuildConfig.BUNDLE)) {
+            } else if (countryState == COUNTRY_STATE_INVALID && !org.telegram.tgnet.ToxicgramRpc.ENABLED && !BuildVars.DEBUG_VERSION && !(TEST_BACKEND_IN_STORE && !BuildConfig.BUNDLE)) {
                 needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.WrongCountry));
                 needHideProgress(false);
                 return;
@@ -3115,7 +3115,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             TLRPC.TL_codeSettings settings = new TLRPC.TL_codeSettings();
             settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
             settings.allow_missed_call = simcardAvailable && allowCall;
-            settings.allow_app_hash = settings.allow_firebase = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
+            settings.allow_app_hash = settings.allow_firebase = false;
+            settings.allow_flashcall = settings.allow_missed_call = false;
             if (forceDisableSafetyNet || TextUtils.isEmpty(BuildVars.SAFETYNET_KEY)) {
                 settings.allow_firebase = false;
             }

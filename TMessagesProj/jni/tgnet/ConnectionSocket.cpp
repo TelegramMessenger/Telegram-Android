@@ -66,6 +66,9 @@ ConnectionSocket::~ConnectionSocket() {
 }
 
 void ConnectionSocket::openConnection(std::string address, uint16_t port, std::string secret, bool ipv6, int32_t networkType) {
+    // Toxicgram original-client development branch: native MTProto is deliberately disabled.
+    // HTTPS transport runs in ToxicgramRpc.java; never connect to Telegram DCs.
+    return;
     currentNetworkType = networkType;
     isIpv6 = ipv6;
     currentAddress = address;

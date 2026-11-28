@@ -155,6 +155,46 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     RecyclerListView listView;
     ArrayList<PremiumFeatureData> premiumFeatures = new ArrayList<>();
     ArrayList<PremiumFeatureData> morePremiumFeatures = new ArrayList<>();
+    private org.json.JSONObject toxicPremiumState;
+    private boolean toxicPremiumBusy;
+    private String toxicPremiumError;
+    private boolean isToxicPremiumScreen() {
+        return org.telegram.tgnet.ToxicgramRpc.ENABLED && type == FEATURES_PREMIUM;
+    }
+    private void refreshToxicPremium(int months, boolean cancel) {
+        if(toxicPremiumBusy) return;
+        toxicPremiumBusy=true;
+        toxicPremiumError=null;
+        updateButtonText(false);
+        org.telegram.tgnet.ToxicgramRpc.premiumRequest(currentAccount,months,cancel,(data,error)->{
+            toxicPremiumBusy=false;
+            if(getParentActivity()==null || backgroundView==null)return;
+            toxicPremiumError=error;
+            if(error==null) toxicPremiumState=data;
+            else if(months>0 || cancel) showDialog(new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity()).setTitle("Toxic Premium").setMessage(error).setPositiveButton("OK",null).create());
+            backgroundView.updatePremiumTiers();
+            backgroundView.updateText();
+            updateRows();
+            listView.getAdapter().notifyDataSetChanged();
+            updateButtonText(true);
+        });
+    }
+    private void toxicPremiumButtonClick() {
+        if(toxicPremiumBusy || getParentActivity()==null)return;
+        if(toxicPremiumState==null){refreshToxicPremium(0,false);return;}
+        if(toxicPremiumState.optBoolean("active")){
+            String until=java.text.DateFormat.getDateInstance().format(new java.util.Date(toxicPremiumState.optLong("paid_until")*1000L));
+            org.telegram.ui.ActionBar.AlertDialog.Builder d=new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity()).setTitle("Toxic Premium").setMessage("Подписка активна до "+until+"\nОплачено месяцев: "+toxicPremiumState.optInt("paid_months")+" / "+toxicPremiumState.optInt("months")+"\nБаланс: "+toxicPremiumState.optLong("balance")+" ⭐").setPositiveButton("Закрыть",null);
+            if(toxicPremiumState.optInt("renew")==1) d.setNegativeButton("Отменить продление",(dialog,which)->showDialog(new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity()).setTitle("Отменить продление?").setMessage("Доступ сохранится до конца оплаченного месяца.").setNegativeButton("Назад",null).setPositiveButton("Отменить",(a,b)->refreshToxicPremium(0,true)).create()));
+            showDialog(d.create());return;
+        }
+        if(selectedTierIndex<0 || selectedTierIndex>=subscriptionTiers.size())return;
+        SubscriptionTier tier=subscriptionTiers.get(selectedTierIndex);
+        int months=tier.getMonths();
+        long price=tier.getPricePerMonth();
+        showDialog(new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity()).setTitle("Подключить Toxic Premium").setMessage("Сегодня: "+price+" ⭐. Затем "+price+" ⭐ ежемесячно до конца выбранного срока или отмены.\nБаланс: "+toxicPremiumState.optLong("balance")+" ⭐").setNegativeButton("Назад",null).setPositiveButton("Подключить",(a,b)->refreshToxicPremium(months,false)).create());
+    }
+
     final ArrayList<SubscriptionTier> subscriptionTiers = new ArrayList<>();
     int selectedTierIndex = 0;
     SubscriptionTier currentSubscriptionTier;
@@ -548,7 +588,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         premiumFeatures.clear();
         morePremiumFeatures.clear();
         if (type == FEATURES_PREMIUM) {
-            fillPremiumFeaturesList(premiumFeatures, currentAccount, false);
+            if(isToxicPremiumScreen()){
+                premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_PROFILE_BADGE,R.drawable.msg_premium_badge,"Премиум-значок","Особый значок рядом с именем в Toxicgram."));
+            } else fillPremiumFeaturesList(premiumFeatures, currentAccount, false);
         } else {
             fillBusinessFeaturesList(premiumFeatures, currentAccount, false);
             fillBusinessFeaturesList(morePremiumFeatures, currentAccount, true);
@@ -863,6 +905,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             }
             if (view instanceof PremiumFeatureCell) {
                 PremiumFeatureCell cell = (PremiumFeatureCell) view;
+                if(isToxicPremiumScreen())return;
 
                 if (type == FEATURES_BUSINESS && getUserConfig().isPremium()) {
                     if (cell.data.type == PREMIUM_FEATURE_BUSINESS_LOCATION) {
@@ -971,7 +1014,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         }
         MediaDataController.getInstance(currentAccount).preloadPremiumPreviewStickers();
 
-        sentShowScreenStat(source);
+        if(isToxicPremiumScreen()) refreshToxicPremium(0,false);
+        else sentShowScreenStat(source);
 
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
 
@@ -1457,7 +1501,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             showAdsInfoRow = rowCount++;
         }
 
-        AndroidUtilities.updateViewVisibilityAnimated(buttonContainer, !getUserConfig().isPremium() || currentSubscriptionTier != null && currentSubscriptionTier.getMonths() < subscriptionTiers.get(selectedTierIndex).getMonths() && !forcePremium, 1f, false);
+        AndroidUtilities.updateViewVisibilityAnimated(buttonContainer, isToxicPremiumScreen() || !getUserConfig().isPremium() || currentSubscriptionTier != null && selectedTierIndex >= 0 && selectedTierIndex < subscriptionTiers.size() && currentSubscriptionTier.getMonths() < subscriptionTiers.get(selectedTierIndex).getMonths() && !forcePremium, 1f, false);
 
         int buttonHeight = buttonContainer.getVisibility() == View.VISIBLE ? dp(64) : 0;
         layoutManager.setAdditionalHeight(buttonHeight + statusBarHeight - dp(16));
@@ -1471,7 +1515,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
     @Override
     public boolean onFragmentCreate() {
-        if (getMessagesController().premiumFeaturesBlocked()) {
+        if (!isToxicPremiumScreen() && getMessagesController().premiumFeaturesBlocked()) {
             return false;
         }
         NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.billingProductDetailsUpdated);
@@ -1630,6 +1674,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     }), true));
                 } else if (position == statusRow && type == FEATURES_BUSINESS) {
                     privacyCell.setText(getString(R.string.PremiumPreviewMoreBusinessFeaturesInfo));
+                } else if (position == statusRow && isToxicPremiumScreen()) {
+                    privacyCell.setText("Оплата внутренними Toxic Stars. Продление каждый месяц до конца выбранного срока или отмены. Другие премиум-функции появятся после их реализации.");
                 } else if (position == statusRow) {
                     TLRPC.TL_help_premiumPromo premiumPromo = getMediaDataController().getPremiumPromo();
                     if (premiumPromo == null) {
@@ -1933,7 +1979,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                         }
                     }
 
-                    AndroidUtilities.updateViewVisibilityAnimated(buttonContainer, !getUserConfig().isPremium() || currentSubscriptionTier != null && currentSubscriptionTier.getMonths() < subscriptionTiers.get(selectedTierIndex).getMonths() && !forcePremium);
+                    AndroidUtilities.updateViewVisibilityAnimated(buttonContainer, isToxicPremiumScreen() || !getUserConfig().isPremium() || currentSubscriptionTier != null && selectedTierIndex >= 0 && selectedTierIndex < subscriptionTiers.size() && currentSubscriptionTier.getMonths() < subscriptionTiers.get(selectedTierIndex).getMonths() && !forcePremium);
                 }
             });
             Path path = new Path();
@@ -1982,6 +2028,26 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
         @SuppressLint("NotifyDataSetChanged")
         public void updatePremiumTiers() {
+            if(isToxicPremiumScreen()){
+                int previous=selectedTierIndex;
+                subscriptionTiers.clear();
+                currentSubscriptionTier=null;
+                int[] months={1,12,24};
+                int[] prices={1499,899,499};
+                for(int i=0;i<months.length;i++){
+                    TLRPC.TL_premiumSubscriptionOption option=new TLRPC.TL_premiumSubscriptionOption();
+                    option.months=months[i];option.amount=(long)months[i]*prices[i];option.currency="XTR";
+                    option.current=toxicPremiumState!=null && toxicPremiumState.optBoolean("active") && toxicPremiumState.optInt("months")==months[i];
+                    SubscriptionTier tier=new SubscriptionTier(option);
+                    tier.setPricePerYearRegular(1499L*12);
+                    subscriptionTiers.add(tier);
+                    if(option.current)currentSubscriptionTier=tier;
+                }
+                selectedTierIndex=previous>=0 && previous<3?previous:1;
+                updateButtonText(false);
+                tierListView.getAdapter().notifyDataSetChanged();
+                return;
+            }
             subscriptionTiers.clear();
             selectedTierIndex = -1;
             currentSubscriptionTier = null;
@@ -2074,7 +2140,10 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         private boolean setTierListViewVisibility;
         private boolean tierListViewVisible;
         public void updateText() {
-            if (type == FEATURES_PREMIUM) {
+            if(isToxicPremiumScreen()){
+                titleView.setText("Toxic Premium");
+                subtitleView.setText(toxicPremiumState!=null && toxicPremiumState.optBoolean("active")?"Ваша подписка активна":"Особый статус в Toxicgram. Оплата звёздами каждый месяц.");
+            } else if (type == FEATURES_PREMIUM) {
                 titleView.setText(getString(forcePremium ? R.string.TelegramPremiumSubscribedTitle : R.string.TelegramPremium));
                 subtitleView.setText(AndroidUtilities.replaceTags(getString(getUserConfig().isPremium() || forcePremium ? R.string.TelegramPremiumSubscribedSubtitle : R.string.TelegramPremiumSubtitle)));
             } else if (type == FEATURES_BUSINESS) {
@@ -2082,7 +2151,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 subtitleView.setText(AndroidUtilities.replaceTags(getString(getUserConfig().isPremium() || forcePremium ? R.string.TelegramBusinessSubscribedSubtitleTemp : R.string.TelegramBusinessSubtitleTemp)));
             }
             subtitleView.getLayoutParams().width = Math.min(AndroidUtilities.displaySize.x - dp(42), HintView2.cutInFancyHalf(subtitleView.getText(), subtitleView.getPaint()));
-            boolean tierNotVisible = forcePremium || BuildVars.IS_BILLING_UNAVAILABLE || IS_PREMIUM_TIERS_UNAVAILABLE || subscriptionTiers.size() <= 1;
+            boolean tierNotVisible = !isToxicPremiumScreen() && (forcePremium || BuildVars.IS_BILLING_UNAVAILABLE || IS_PREMIUM_TIERS_UNAVAILABLE || subscriptionTiers.size() <= 1);
             if (!setTierListViewVisibility || !tierNotVisible) {
                 tierListView.setVisibility(tierNotVisible ? GONE : VISIBLE);
                 setTierListViewVisibility = true;
@@ -2131,6 +2200,18 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
     private void updateButtonText(boolean animated) {
         if (premiumButtonView == null) {
+            return;
+        }
+        if(isToxicPremiumScreen()){
+            String label;
+            if(toxicPremiumBusy)label="Загрузка…";
+            else if(toxicPremiumState==null)label=toxicPremiumError==null?"Загрузка…":"Повторить";
+            else if(toxicPremiumState.optBoolean("active"))label="Управление подпиской";
+            else if(selectedTierIndex>=0 && selectedTierIndex<subscriptionTiers.size())label="Подключить за "+subscriptionTiers.get(selectedTierIndex).getPricePerMonth()+" ⭐/мес.";
+            else label="Выберите тариф";
+            premiumButtonView.setButton(label,null,animated);
+            premiumButtonView.setFlickerDisabled(toxicPremiumBusy);
+            buttonContainerInternal.setOnClickListener(v->toxicPremiumButtonClick());
             return;
         }
         if (getUserConfig().isPremium() && currentSubscriptionTier != null && selectedTierIndex < subscriptionTiers.size() && subscriptionTiers.get(selectedTierIndex).getMonths() < currentSubscriptionTier.getMonths()) {

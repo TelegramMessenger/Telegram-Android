@@ -1,0 +1,6 @@
+# Toxicgram: original-client migration (development)
+This branch modifies upstream Telegram Android 13.2.2 itself, using TMessagesProj and TMessagesProj_AppStandalone, rather than building the separate toxicgram-android project. The master branch remains the existing working REST client and server.
+
+Implemented source changes: ToxicgramRpc HTTPS adapter for bot login, logout, dialog/history retrieval, basic text send/read, phone and username lookup; Android Keystore encrypted session token; original LoginActivity wiring; native MTProto socket opening blocked, no unsupported-RPC fallback; separate package and development build identity. Build workflow compiles original source, not the older mini-client.
+
+This is not a production-ready or fully migrated client. Missing: full TL method parity, update sequence and background synchronization, media mapping, rooms and channels mapping, gifts, stories, premium, push, calls, secret chats, cancellation and complete external-network/privacy audit. The server REST API lacks full MTProto semantics. No claim of working APK or successful sign-in until compilation and device verification. The build deliberately does not publish APK artifacts before this verification. Upstream GPL notices retained.

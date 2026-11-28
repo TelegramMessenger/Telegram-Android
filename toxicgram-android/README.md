@@ -1,0 +1,3 @@
+# Toxicgram Android 0.3
+
+Independent Android client for Toxicgram's HTTPS API. Telegram-inspired adaptation of the dialog list, navigation drawer, profile and conversation layout, with light/dark themes and polling. The original Telegram `CombinedDrawable` is ported from `TMessagesProj/src/main/java/org/telegram/ui/Components/CombinedDrawable.java` and retains its GPL-2.0-or-later notice. See upstream LICENSE at the repository root. Original DialogCell, ActionBar and MTProto are not integrated. Sessions are process-memory only. Text messages only; no E2EE, groups, media, push notifications or calls. Build with Gradle 8.9, Java 17 and Android SDK 35: `gradle -p toxicgram-android :app:assembleDebug`. APK: app/build/outputs/apk/debug/app-debug.apk under toxicgram-android. 

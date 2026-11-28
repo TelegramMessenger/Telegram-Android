@@ -325,7 +325,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                         progressDialog.showDelayed(500);
                     }
                     getMessagesController().getTranslateController().reset();
-                    int reqId = LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true, currentAccount, () -> {
+                    int reqId = LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, !org.telegram.tgnet.ToxicgramRpc.ENABLED, currentAccount, () -> {
                         progressDialog.dismiss();
                         if (!sameLang) {
                             AndroidUtilities.runOnUIThread(() -> {
@@ -463,11 +463,13 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 
         sortedLanguages = new ArrayList<>();
         unofficialLanguages = new ArrayList<>(LocaleController.getInstance().unofficialLanguages);
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) unofficialLanguages.removeIf(info -> info.isRemote() || info.isUnofficial());
 
         ArrayList<LocaleController.LocaleInfo> arrayList = LocaleController.getInstance().languages;
         for (int a = 0, size = arrayList.size(); a < size; a++) {
             LocaleController.LocaleInfo info = arrayList.get(a);
-            if (info.serverIndex != Integer.MAX_VALUE) {
+            if (org.telegram.tgnet.ToxicgramRpc.ENABLED && (info.isRemote() || info.isUnofficial()) && !info.isBuiltIn()) continue;
+            if (info.isBuiltIn() || info.serverIndex != Integer.MAX_VALUE) {
                 sortedLanguages.add(info);
             } else {
                 unofficialLanguages.add(info);

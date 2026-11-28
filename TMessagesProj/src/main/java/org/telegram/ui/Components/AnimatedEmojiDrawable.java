@@ -1349,6 +1349,11 @@ public class AnimatedEmojiDrawable extends Drawable {
         }
 
         public boolean set(long documentId, int cacheType, boolean animated) {
+            if(org.telegram.tgnet.ToxicgramRpc.ENABLED && ToxicVerificationDrawable.isToxic(documentId)){
+                if(drawables[0] instanceof ToxicVerificationDrawable && ((ToxicVerificationDrawable)drawables[0]).id==documentId)return false;
+                set(new ToxicVerificationDrawable(documentId),animated);
+                return true;
+            }
             if (drawables[0] instanceof AnimatedEmojiDrawable && ((AnimatedEmojiDrawable) drawables[0]).getDocumentId() == documentId) {
                 return false;
             }

@@ -1188,6 +1188,19 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 }
             }
             long chat_id = (Long) args[0];
+            if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+                // Only private Toxicgram rooms are implemented. Do not create Telegram links.
+                if (onFinishListener != null) {
+                    onFinishListener.run(ChannelCreateActivity.this, chat_id);
+                } else {
+                    Bundle members = new Bundle();
+                    members.putInt("step", 2);
+                    members.putLong("chatId", chat_id);
+                    members.putInt("chatType", ChatObject.CHAT_TYPE_CHANNEL);
+                    presentFragment(new GroupCreateActivity(members), true);
+                }
+                return;
+            }
             Bundle bundle = new Bundle();
             bundle.putInt("step", 1);
             bundle.putLong("chat_id", chat_id);

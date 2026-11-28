@@ -687,6 +687,15 @@ public class LocaleController {
         languages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Polski";
+        localeInfo.nameEnglish = "Polish";
+        localeInfo.shortName = localeInfo.pluralLangCode = "pl";
+        localeInfo.pathToFile = null;
+        localeInfo.builtIn = true;
+        languages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
         loadOtherLanguages();
         if (remoteLanguages.isEmpty()) {
             AndroidUtilities.runOnUIThread(() -> loadRemoteLanguages(UserConfig.selectedAccount));
@@ -702,6 +711,7 @@ public class LocaleController {
             LocaleInfo locale = remoteLanguages.get(a);
             LocaleInfo existingLocale = getLanguageFromDict(locale.getKey());
             if (existingLocale != null) {
+                if (org.telegram.tgnet.ToxicgramRpc.ENABLED && existingLocale.isBuiltIn()) continue;
                 existingLocale.pathToFile = locale.pathToFile;
                 existingLocale.version = locale.version;
                 existingLocale.baseVersion = locale.baseVersion;
@@ -717,6 +727,7 @@ public class LocaleController {
             LocaleInfo locale = unofficialLanguages.get(a);
             LocaleInfo existingLocale = getLanguageFromDict(locale.getKey());
             if (existingLocale != null) {
+                if (org.telegram.tgnet.ToxicgramRpc.ENABLED && existingLocale.isBuiltIn()) continue;
                 existingLocale.pathToFile = locale.pathToFile;
                 existingLocale.version = locale.version;
                 existingLocale.baseVersion = locale.baseVersion;
@@ -1317,6 +1328,9 @@ public class LocaleController {
         if (localeInfo == null) {
             return 0;
         }
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED && localeInfo.isBuiltIn()) {
+            localeInfo.pathToFile = null;
+        }
         int requestId = 0;
         boolean hasBase = localeInfo.hasBaseLang();
         File pathToFile = localeInfo.getPathToFile();
@@ -1418,7 +1432,7 @@ public class LocaleController {
                 FileLog.d("reload locale because it was malformed before " + pathToFile);
                 reloadLastFile = true;
             }
-            if (reloadLastFile || !isLoadingRemote && !force && shouldReinstallLangpack(localeInfo.shortName)) {
+            if (!(org.telegram.tgnet.ToxicgramRpc.ENABLED && localeInfo.isBuiltIn()) && (reloadLastFile || !isLoadingRemote && !force && shouldReinstallLangpack(localeInfo.shortName))) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("reload locale because one of file is corrupted " + pathToFile + " " + pathToBaseFile + " reloadLastFile=" + reloadLastFile + " isLoadingRemote=" + isLoadingRemote + " force=" + force);
                 }
@@ -3374,7 +3388,7 @@ public class LocaleController {
     }
 
     public void loadRemoteLanguages(final int currentAccount, boolean applyCurrent) {
-        if (loadingRemoteLanguages) {
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED || loadingRemoteLanguages) {
             return;
         }
         loadingRemoteLanguages = true;

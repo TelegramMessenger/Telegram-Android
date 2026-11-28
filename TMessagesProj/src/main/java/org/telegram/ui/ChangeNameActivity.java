@@ -182,6 +182,26 @@ public class ChangeNameActivity extends BaseFragment {
         }
         TL_account.updateProfile req = new TL_account.updateProfile();
         req.flags = 3;
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+            req.first_name = newFirst;
+            req.last_name = newLast;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (response instanceof TLRPC.User && error == null) {
+                    TLRPC.User updated = (TLRPC.User) response;
+                    ArrayList<TLRPC.User> users = new ArrayList<>();
+                    users.add(updated);
+                    MessagesController.getInstance(currentAccount).putUsers(users, false);
+                    org.telegram.messenger.MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, false, true);
+                    UserConfig.getInstance(currentAccount).setCurrentUser(updated);
+                    UserConfig.getInstance(currentAccount).saveConfig(true);
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+                } else {
+                    android.widget.Toast.makeText(org.telegram.messenger.ApplicationLoader.applicationContext, "Toxicgram: " + (error == null ? "PROFILE_UPDATE_FAILED" : error.text), android.widget.Toast.LENGTH_LONG).show();
+                }
+            }));
+            return;
+        }
         currentUser.first_name = req.first_name = newFirst;
         currentUser.last_name = req.last_name = newLast;
         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());

@@ -268,6 +268,18 @@ public class PremiumTierCell extends ViewGroup {
                 break;
         }
 
+        if(org.telegram.tgnet.ToxicgramRpc.ENABLED && "XTR".equals(tier.getCurrency())){
+            isDrawingGradient=false;
+            int discount=tier.getDiscount();
+            discountView.setVisibility(discount>0?VISIBLE:GONE);
+            if(discount>0)discountView.setText("-"+discount+"%");
+            pricePerYearStrikeView.setVisibility(GONE);
+            pricePerYearView.setVisibility(VISIBLE);
+            pricePerYearView.setText(tier.subscriptionOption.current?"Ваш текущий тариф":"Ежемесячная оплата");
+            pricePerMonthView.setText(tier.getPricePerMonth()+" ⭐/мес.");
+            requestLayout();
+            return;
+        }
         isDrawingGradient = !BuildVars.useInvoiceBilling() && (!BillingController.getInstance().isReady() || tier.getOfferDetails() == null);
         if (!isDrawingGradient) {
             if (tier.getDiscount() <= 0) {

@@ -119,6 +119,10 @@ public class FileUploadOperation {
             return;
         }
         state = 1;
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+            if (estimatedSize == 0 || isEncrypted) Utilities.stageQueue.postRunnable(this::stageToxicgramFile);
+            return;
+        }
         AutoDeleteMediaTask.lockFile(uploadingFilePath);
         Utilities.stageQueue.postRunnable(() -> {
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
@@ -131,6 +135,20 @@ public class FileUploadOperation {
             }
             startUploadRequests();
         });
+    }
+
+    private void stageToxicgramFile() {
+        if (state != 1) return;
+        File file = new File(uploadingFilePath);
+        totalFileSize = file.length();
+        TLRPC.InputFile result = isEncrypted ? null : org.telegram.tgnet.ToxicgramRpc.stageUpload(currentAccount, file);
+        if (result == null) {
+            state = 4;
+            delegate.didFailedUploadingFile(this);
+            return;
+        }
+        state = 3;
+        delegate.didFinishUploadingFile(this, result, null, null, null);
     }
 
     // Keeps the whole budget in flight. Parts used to be added one per answer, plus one per
@@ -146,6 +164,7 @@ public class FileUploadOperation {
     }
 
     protected void onNetworkChanged(final boolean slow) {
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) return;
         if (state != 1) {
             return;
         }
@@ -190,6 +209,10 @@ public class FileUploadOperation {
             return;
         }
         state = 2;
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+            delegate.didFailedUploadingFile(this);
+            return;
+        }
         Utilities.stageQueue.postRunnable(() -> {
             for (int a = 0; a < requestTokens.size(); a++) {
                 ConnectionsManager.getInstance(currentAccount).cancelRequest(requestTokens.valueAt(a), true);
@@ -223,6 +246,10 @@ public class FileUploadOperation {
     }
 
     protected void checkNewDataAvailable(final long newAvailableSize, final long finalSize, final Float progress) {
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+            if (finalSize > 0) Utilities.stageQueue.postRunnable(this::stageToxicgramFile);
+            return;
+        }
         Utilities.stageQueue.postRunnable(() -> {
             if (progress != null && estimatedSize != 0 && finalSize == 0) {
                 boolean needRecalculation = false;

@@ -2264,6 +2264,8 @@ public class StarsController {
         loadStarGifts();
     }
 
+    private int toxicGiftRetries;
+
     public void loadStarGifts() {
         if (giftsLoading || giftsLoaded && (System.currentTimeMillis() - giftsRemoteTime) < 1000 * 60) return;
         giftsLoading = true;
@@ -2292,6 +2294,12 @@ public class StarsController {
         } else {
             getStarGiftsRemote(giftsHash, giftsRemote -> {
                 giftsLoading = false;
+                if (org.telegram.tgnet.ToxicgramRpc.ENABLED && giftsRemote == null) {
+                    giftsLoaded = false;
+                    if (toxicGiftRetries++ < 3) AndroidUtilities.runOnUIThread(this::loadStarGifts, 5000);
+                    return;
+                }
+                toxicGiftRetries = 0;
                 giftsLoaded = true;
                 if (giftsRemote instanceof TL_stars.TL_starGifts) {
                     final TL_stars.TL_starGifts res = (TL_stars.TL_starGifts) giftsRemote;

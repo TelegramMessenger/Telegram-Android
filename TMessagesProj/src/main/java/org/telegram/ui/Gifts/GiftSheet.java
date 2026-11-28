@@ -206,7 +206,8 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         fixNavigationBarKey(Theme.key_dialogGiftsBackground);
         myGifts = StarsController.getInstance(currentAccount).getProfileGiftsList(UserConfig.getInstance(currentAccount).getClientUserId());
 
-        StarsController.getInstance(currentAccount).loadStarGifts();
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) StarsController.getInstance(currentAccount).invalidateStarGifts();
+        else StarsController.getInstance(currentAccount).loadStarGifts();
 
         final BackupImageView avatarImageView = new BackupImageView(context);
         avatarImageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -792,6 +793,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         } else if (id == NotificationCenter.starGiftsLoaded) {
             if (adapter != null) {
                 adapter.update(true);
+                if (org.telegram.tgnet.ToxicgramRpc.ENABLED) adapter.notifyDataSetChanged();
             }
         } else if (id == NotificationCenter.userInfoDidLoad) {
             if (!isShown()) return;
@@ -929,7 +931,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
     public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         boolean pushedTopView = false;
-        if (!self && dialogId >= 0 && !(userSettings != null && userSettings.disallow_premium_gifts)) {
+        if (!org.telegram.tgnet.ToxicgramRpc.ENABLED && !self && dialogId >= 0 && !(userSettings != null && userSettings.disallow_premium_gifts)) {
             items.add(UItem.asCustom(topView));
             pushedTopView = true;
             items.add(UItem.asCustom(premiumHeaderView));
@@ -978,7 +980,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 }
             }
         }
-        if (!MessagesController.getInstance(currentAccount).stargiftsBlocked && (!gifts.isEmpty() || userSettings != null && !userSettings.disallow_unique_stargifts && myGifts != null && !myGifts.gifts.isEmpty())) {
+        if ((org.telegram.tgnet.ToxicgramRpc.ENABLED || !MessagesController.getInstance(currentAccount).stargiftsBlocked) && (!gifts.isEmpty() || userSettings != null && !userSettings.disallow_unique_stargifts && myGifts != null && !myGifts.gifts.isEmpty())) {
             if (!pushedTopView) {
                 items.add(UItem.asCustom(topView));
             } else {
@@ -1007,9 +1009,13 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 TAB_MY_GIFTS = tabs.size();
                 tabs.add(getString(R.string.Gift2TabMine));
             }
-            TAB_COLLECTIBLES = tabs.size();
-            tabs.add(getString(R.string.Gift2TabCollectibles));
-            if (browseCollectibles && !browseTabApplied) {
+            TAB_COLLECTIBLES = -1;
+            if (!org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+                TAB_COLLECTIBLES = tabs.size();
+                tabs.add(getString(R.string.Gift2TabCollectibles));
+            }
+            if (org.telegram.tgnet.ToxicgramRpc.ENABLED && selectedTab >= tabs.size()) selectedTab = TAB_ALL;
+            if (TAB_COLLECTIBLES >= 0 && browseCollectibles && !browseTabApplied) {
                 browseTabApplied = true;
                 selectedTab = TAB_COLLECTIBLES;
             }
@@ -2285,11 +2291,21 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     } else if (a.object instanceof TL_stars.StarGift && b.object instanceof TL_stars.StarGift) {
                         final TL_stars.StarGift ag = (TL_stars.StarGift) a.object;
                         final TL_stars.StarGift bg = (TL_stars.StarGift) b.object;
-                        return ag.id == bg.id;
+                        if (ag.id != bg.id) return false;
+                        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+                            TLRPC.Document ad=ag.getDocument(), bd=bg.getDocument();
+                            return ad==null || bd==null ? ad==bd : java.util.Arrays.equals(ad.file_reference,bd.file_reference) && ag.stars==bg.stars && ag.sold_out==bg.sold_out;
+                        }
+                        return true;
                     } else if (a.object instanceof TL_stars.SavedStarGift && b.object instanceof TL_stars.SavedStarGift) {
                         final TL_stars.SavedStarGift ag = (TL_stars.SavedStarGift) a.object;
                         final TL_stars.SavedStarGift bg = (TL_stars.SavedStarGift) b.object;
-                        return ag.gift.id == bg.gift.id && ag.date == bg.date && ag.saved_id == bg.saved_id;
+                        if (ag.gift.id != bg.gift.id || ag.date != bg.date || ag.saved_id != bg.saved_id) return false;
+                        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+                            TLRPC.Document ad=ag.gift.getDocument(), bd=bg.gift.getDocument();
+                            return ad==null || bd==null ? ad==bd : java.util.Arrays.equals(ad.file_reference,bd.file_reference);
+                        }
+                        return true;
                     }
                 }
                 return (

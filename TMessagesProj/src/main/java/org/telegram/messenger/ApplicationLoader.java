@@ -408,6 +408,7 @@ public class ApplicationLoader extends Application {
     }
 
     private void initPushServices() {
+        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) return;
         AndroidUtilities.runOnUIThread(() -> {
             if (getPushProvider().hasServices()) {
                 getPushProvider().onRequestPushToken();

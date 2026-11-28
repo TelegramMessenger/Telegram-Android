@@ -614,6 +614,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int enable_no_forwards = 46;
     private final static int disable_no_forwards = 47;
     private final static int send_money = 48;
+    private final static int toxic_premium_menu = 9071;
+    private final static int toxic_self_gifts = 9072;
 
     private Rect rect = new Rect();
 
@@ -2774,6 +2776,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     presentFragment(StatisticActivity.create(chat, false));
                 } else if (id == view_discussion) {
                     openDiscussion();
+                } else if (id == toxic_premium_menu) {
+                    presentFragment(new PremiumPreviewFragment("settings"));
+                } else if (id == toxic_self_gifts) {
+                    showDialog(new GiftSheet(getContext(), currentAccount, getUserConfig().getClientUserId(), null, null));
                 } else if (id == gift_premium) {
                     onGiftPermiumClicked();
                 } else if (id == send_money) {
@@ -11015,15 +11021,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 devicesRow = rowCount++;
                 languageRow = rowCount++;
                 devicesSectionRow = rowCount++;
-                if (!getMessagesController().premiumFeaturesBlocked()) {
+                if (org.telegram.tgnet.ToxicgramRpc.ENABLED || !getMessagesController().premiumFeaturesBlocked()) {
                     premiumRow = rowCount++;
                 }
-                if (getMessagesController().starsPurchaseAvailable()) {
+                if (org.telegram.tgnet.ToxicgramRpc.ENABLED || getMessagesController().starsPurchaseAvailable()) {
                     starsRow = rowCount++;
                 }
-                StarsController.getInstance(currentAccount, true).getBalance();
-                if (ApplicationLoader.isBetaBuild() || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isHuaweiStoreBuild() || (StarsController.getInstance(currentAccount, true).balanceAvailable() && (StarsController.getInstance(currentAccount, true).hasTransactions() || StarsController.getInstance(currentAccount, true).getBalance().positive()))) {
-                    tonRow = rowCount++;
+                if (!org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+                    StarsController.getInstance(currentAccount, true).getBalance();
+                    if (ApplicationLoader.isBetaBuild() || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isHuaweiStoreBuild() || (StarsController.getInstance(currentAccount, true).balanceAvailable() && (StarsController.getInstance(currentAccount, true).hasTransactions() || StarsController.getInstance(currentAccount, true).getBalance().positive()))) {
+                        tonRow = rowCount++;
+                    }
                 }
                 if (!getMessagesController().premiumFeaturesBlocked()) {
                     businessRow = rowCount++;
@@ -11673,9 +11681,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             setCollectibleGiftStatus(user.emoji_status instanceof TLRPC.TL_emojiStatusCollectible ? (TLRPC.TL_emojiStatusCollectible) user.emoji_status : null);
 
 
-            final ImageLocation imageLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_BIG);
-            final ImageLocation thumbLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL);
-            final ImageLocation videoThumbLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_VIDEO_BIG);
+            final ImageLocation imageLocation = ImageLocation.getForUserOrChat(currentAccount, user, ImageLocation.TYPE_BIG);
+            final ImageLocation thumbLocation = ImageLocation.getForUserOrChat(currentAccount, user, ImageLocation.TYPE_SMALL);
+            final ImageLocation videoThumbLocation = ImageLocation.getForUserOrChat(currentAccount, user, ImageLocation.TYPE_VIDEO_BIG);
             VectorAvatarThumbDrawable vectorAvatarThumbDrawable = null;
             TLRPC.VideoSize vectorAvatar = null;
             if (userInfo != null) {
@@ -11705,7 +11713,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             if (imageLocation != null && (prevLoadedImageLocation == null || imageLocation.photoId != prevLoadedImageLocation.photoId)) {
                 prevLoadedImageLocation = imageLocation;
-                getFileLoader().loadFile(imageLocation, user, null, FileLoader.PRIORITY_LOW, 1);
+                // Toxicgram avatars are local files; ImageReceiver loads them directly.
+                if (imageLocation.path == null) {
+                    getFileLoader().loadFile(imageLocation, user, null, FileLoader.PRIORITY_LOW, 1);
+                }
             }
 
             CharSequence newString = UserObject.getUserName(user);
@@ -12348,6 +12359,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     linkItem = otherItem.addSubItem(copy_link_profile, R.drawable.msg_link2, getString(R.string.ProfileCopyLink));
                     updateItemsUsername();
                 }
+                if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+                    otherItem.addSubItem(toxic_premium_menu, R.drawable.msg_settings_premium, "Toxic Premium");
+                    otherItem.addSubItem(toxic_self_gifts, R.drawable.msg_gift_premium, "Купить подарок себе");
+                }
                 selfUser = true;
             } else {
                 if (user.bot && user.bot_can_edit) {
@@ -12407,7 +12422,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     otherItem.addSubItem(delete_contact, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteContact));
                 }
                 if (!UserObject.isDeleted(user) && !isBot && currentEncryptedChat == null && !userBlocked && userId != 333000 && userId != 777000 && userId != 42777) {
-                    if (!BuildVars.IS_BILLING_UNAVAILABLE && !user.self && !user.bot && !MessagesController.isSupportUser(user) && !getMessagesController().premiumPurchaseBlocked()) {
+                    if ((org.telegram.tgnet.ToxicgramRpc.ENABLED || (!BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked())) && !user.self && !user.bot && !MessagesController.isSupportUser(user)) {
                         StarsController.getInstance(currentAccount).loadStarGifts();
                         otherItem.addSubItem(gift_premium, R.drawable.msg_gift_premium, LocaleController.getString(R.string.ProfileSendAGift));
                         giftAction = true;
@@ -14047,12 +14062,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == addToGroupButtonRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.AddToGroupOrChannel), R.drawable.msg_groups_create, false);
                     } else if (position == premiumRow) {
-                        textCell.setTextAndIcon(LocaleController.getString(R.string.TelegramPremium), new AnimatedEmojiDrawable.WrapSizeDrawable(PremiumGradient.getInstance().premiumStarMenuDrawable, dp(24), dp(24)), true);
+                        textCell.setTextAndIcon(org.telegram.tgnet.ToxicgramRpc.ENABLED ? "Toxic Premium" : LocaleController.getString(R.string.TelegramPremium), new AnimatedEmojiDrawable.WrapSizeDrawable(PremiumGradient.getInstance().premiumStarMenuDrawable, dp(24), dp(24)), true);
                         textCell.setImageLeft(23);
                     } else if (position == starsRow) {
                         StarsController c = StarsController.getInstance(currentAccount);
-                        long balance = c.getBalance().amount;
-                        textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.MenuTelegramStars), c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : "", new AnimatedEmojiDrawable.WrapSizeDrawable(PremiumGradient.getInstance().goldenStarMenuDrawable, dp(24), dp(24)), true);
+                        TL_stars.StarsAmount balance = c.getBalance();
+                        if (org.telegram.tgnet.ToxicgramRpc.ENABLED) {
+                            textCell.setTextAndValueAndIcon("Stars", c.balanceAvailable() && balance != null ? Long.toString(balance.amount) : "…", new AnimatedEmojiDrawable.WrapSizeDrawable(PremiumGradient.getInstance().goldenStarMenuDrawable, dp(24), dp(24)), true);
+                        } else {
+                            textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.MenuTelegramStars), c.balanceAvailable() && balance != null && balance.amount > 0 ? StarsIntroActivity.formatStarsAmount(balance, 0.85f, ' ') : "", new AnimatedEmojiDrawable.WrapSizeDrawable(PremiumGradient.getInstance().goldenStarMenuDrawable, dp(24), dp(24)), true);
+                        }
                         textCell.setImageLeft(23);
                     } else if (position == tonRow) {
                         StarsController c = StarsController.getTonInstance(currentAccount);
@@ -14165,7 +14184,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             }
                             if (bot_verification != null) {
                                 sb.append("x");
-                                sb.setSpan(new AnimatedEmojiSpan(bot_verification.icon, cell.getTextView().getPaint().getFontMetricsInt()), sb.length() - 1, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                if(org.telegram.ui.Components.ToxicVerificationDrawable.isToxic(bot_verification.icon)){
+                                    org.telegram.ui.Components.ToxicVerificationDrawable badge=new org.telegram.ui.Components.ToxicVerificationDrawable(bot_verification.icon);
+                                    badge.setBounds(0,0,dp(16),dp(16));
+                                    sb.setSpan(new android.text.style.ImageSpan(badge),sb.length()-1,sb.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                }else sb.setSpan(new AnimatedEmojiSpan(bot_verification.icon, cell.getTextView().getPaint().getFontMetricsInt()), sb.length() - 1, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                 sb.append(" ");
                                 SpannableString description = new SpannableString(MessageObject.formatTextWithEntities(bot_verification.description));
                                 try {
