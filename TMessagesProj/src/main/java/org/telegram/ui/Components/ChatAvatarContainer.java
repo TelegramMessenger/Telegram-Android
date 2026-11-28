@@ -184,6 +184,11 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
 
         final boolean avatarClickable = parentFragment != null && (parentFragment.getChatMode() == 0 || parentFragment.getChatMode() == ChatActivity.MODE_SUGGESTIONS) && !UserObject.isReplyUser(parentFragment.getCurrentUser()) && (parentFragment.getCurrentUser() == null || parentFragment.getCurrentUser().id != UserObject.VERIFY);
         avatarImageView = new BackupImageView(context) {
+            @Override
+            public void setVisibility(int visibility) {
+                // ButterGram: with the iOS-style header the avatar lives in the right pill instead
+                super.setVisibility(glassMode && org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get() ? GONE : visibility);
+            }
 
             StoriesUtilities.AvatarStoryParams params = new StoriesUtilities.AvatarStoryParams(true) {
                 @Override
@@ -419,6 +424,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        buttergramCenterTexts();
         canvas.save();
         final float s = bounce.getScale(.02f);
         canvas.scale(s, s, getPivotX(), getHeight() - ActionBar.getCurrentActionBarHeight() / 2f);
@@ -757,6 +763,80 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         setClipChildren(false);
     }
 
+    private float buttergramPillCenter = Float.NaN;
+    private View buttergramPillHost;
+    private boolean buttergramCentered;
+    private final int[] buttergramLoc = new int[2];
+    private final int[] buttergramHostLoc = new int[2];
+
+    /** ButterGram: the ActionBar reports where the title pill really is (centre, in its own coordinates). */
+    public void setButtergramPill(View host, float centerX) {
+        buttergramPillHost = host;
+        buttergramPillCenter = centerX;
+    }
+
+    /**
+     * Centres title and subtitle on the real pill. It works in window coordinates, so margins, translations
+     * and stale layouts cannot throw it off: every frame the text is moved by exactly the missing distance.
+     */
+    private void buttergramCenterTexts() {
+        final boolean on = buttergramPillHost != null && !Float.isNaN(buttergramPillCenter)
+                && org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get();
+        if (!on) {
+            if (buttergramCentered) {
+                buttergramCentered = false;
+                titleTextView.setTranslationX(0);
+                if (subtitleTextView != null) {
+                    subtitleTextView.setTranslationX(0);
+                }
+                if (animatedSubtitleTextView != null) {
+                    animatedSubtitleTextView.setTranslationX(0);
+                }
+            }
+            return;
+        }
+        buttergramCentered = true;
+        buttergramPillHost.getLocationInWindow(buttergramHostLoc);
+        final View[] views = {titleTextView, subtitleTextView, animatedSubtitleTextView};
+        for (View v : views) {
+            if (v == null || v.getVisibility() == GONE) {
+                continue;
+            }
+            final float w;
+            if (v instanceof SimpleTextView) {
+                w = buttergramTextWidth((SimpleTextView) v);
+            } else if (v instanceof AnimatedTextView) {
+                w = ((AnimatedTextView) v).getDrawable().getCurrentWidth();
+            } else {
+                continue;
+            }
+            v.getLocationInWindow(buttergramLoc);
+            final float desired = buttergramHostLoc[0] + buttergramPillCenter - w / 2f;
+            final float delta = desired - buttergramLoc[0];
+            if (Math.abs(delta) > 0.5f) {
+                v.setTranslationX(v.getTranslationX() + delta);
+            }
+        }
+    }
+
+    /** The width the text really occupies on screen: layout width plus the drawables that were actually drawn. */
+    private float buttergramTextWidth(SimpleTextView v) {
+        float w = v.getTextWidth();
+        final android.graphics.drawable.Drawable l = v.getLeftDrawable();
+        if (l != null) {
+            w += l.getIntrinsicWidth();
+        }
+        final android.graphics.drawable.Drawable r = v.getRightDrawable();
+        if (r != null && !r.getBounds().isEmpty()) {
+            w = Math.max(w, r.getBounds().right);
+        }
+        final android.graphics.drawable.Drawable r2 = v.getRightDrawable2();
+        if (r2 != null && !r2.getBounds().isEmpty()) {
+            w = Math.max(w, r2.getBounds().right);
+        }
+        return w;
+    }
+
     private boolean glassMode;
     public void setGlassMode() {
         if (titleTextView != null) {
@@ -766,51 +846,54 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             subtitleTextView.setTextSizePx(dp(13.5f));
         }
         glassMode = true;
+        avatarImageView.setVisibility(avatarImageView.getVisibility());
     }
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         final int actionBarHeight = ActionBar.getCurrentActionBarHeight();
+        final int lp = leftPadding;
         final int viewTop = (actionBarHeight - avatarImageView.getMeasuredHeight() - 2) / 2 + (occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
         final int subtitleTop = viewTop + dp(glassMode ? 23.66f : 24);
 
-        avatarImageView.layout(1 + leftPadding, 1 + viewTop, 1 + leftPadding + avatarImageView.getMeasuredWidth(), 1 + viewTop + avatarImageView.getMeasuredHeight());
-        int l = leftPadding + (avatarImageView.getVisibility() == VISIBLE ? dp(glassMode ? 49.66f : 55) : dp(glassMode ? 13 : 1)) + rightAvatarPadding;
+        avatarImageView.layout(1 + lp, 1 + viewTop, 1 + lp + avatarImageView.getMeasuredWidth(), 1 + viewTop + avatarImageView.getMeasuredHeight());
+        int l = lp + (avatarImageView.getVisibility() == VISIBLE ? dp(glassMode ? 49.66f : 55) : dp(glassMode ? 13 : 1)) + rightAvatarPadding;
         SimpleTextView titleTextLargerCopyView = this.titleTextLargerCopyView.get();
+        final int titleL = l, subtitleL = l;
         if (getSubtitleTextView().getVisibility() != GONE) {
-            titleTextView.layout(l, viewTop + dp(1.66f) - titleTextView.getPaddingTop(), l + titleTextView.getMeasuredWidth(), viewTop + titleTextView.getTextHeight() + dp(1.66f) - titleTextView.getPaddingTop() + titleTextView.getPaddingBottom());
+            titleTextView.layout(titleL, viewTop + dp(1.66f) - titleTextView.getPaddingTop(), titleL + titleTextView.getMeasuredWidth(), viewTop + titleTextView.getTextHeight() + dp(1.66f) - titleTextView.getPaddingTop() + titleTextView.getPaddingBottom());
             if (titleTextLargerCopyView != null) {
                 titleTextLargerCopyView.layout(l, viewTop + dp(1.66f), l + titleTextLargerCopyView.getMeasuredWidth(), viewTop + titleTextLargerCopyView.getTextHeight() + dp(1.66f));
             }
         } else {
-            titleTextView.layout(l, viewTop + dp(11) - titleTextView.getPaddingTop(), l + titleTextView.getMeasuredWidth(), viewTop + titleTextView.getTextHeight() + dp(11) - titleTextView.getPaddingTop() + titleTextView.getPaddingBottom());
+            titleTextView.layout(titleL, viewTop + dp(11) - titleTextView.getPaddingTop(), titleL + titleTextView.getMeasuredWidth(), viewTop + titleTextView.getTextHeight() + dp(11) - titleTextView.getPaddingTop() + titleTextView.getPaddingBottom());
             if (titleTextLargerCopyView != null) {
                 titleTextLargerCopyView.layout(l, viewTop + dp(10), l + titleTextLargerCopyView.getMeasuredWidth(), viewTop + titleTextLargerCopyView.getTextHeight() + dp(10));
             }
         }
         if (communityItem != null) {
             communityItem.layout(
-                leftPadding + dp(29f),
+                lp + dp(29f),
                 viewTop + dp(27.33f),
-                leftPadding + dp(29f) + communityItem.getMeasuredWidth(),
+                lp + dp(29f) + communityItem.getMeasuredWidth(),
                 viewTop + dp(27.33f) + communityItem.getMeasuredHeight());
         }
         if (timeItem != null) {
             timeItem.layout(
-                leftPadding + dp(19.333f),
+                lp + dp(19.333f),
                 viewTop - dp(8),
-                leftPadding + dp(19.333f) + timeItem.getMeasuredWidth(),
+                lp + dp(19.333f) + timeItem.getMeasuredWidth(),
                 viewTop - dp(8) + timeItem.getMeasuredHeight()
             );
         }
         if (starBgItem != null) {
-            starBgItem.layout(leftPadding + dp(28), viewTop + dp(24), leftPadding + dp(28) + starBgItem.getMeasuredWidth(), viewTop + dp(24) + starBgItem.getMeasuredHeight());
+            starBgItem.layout(lp + dp(28), viewTop + dp(24), lp + dp(28) + starBgItem.getMeasuredWidth(), viewTop + dp(24) + starBgItem.getMeasuredHeight());
         }
         if (starFgItem != null) {
-            starFgItem.layout(leftPadding + dp(28), viewTop + dp(24), leftPadding + dp(28) + starFgItem.getMeasuredWidth(), viewTop + dp(24) + starFgItem.getMeasuredHeight());
+            starFgItem.layout(lp + dp(28), viewTop + dp(24), lp + dp(28) + starFgItem.getMeasuredWidth(), viewTop + dp(24) + starFgItem.getMeasuredHeight());
         }
         if (subtitleTextView != null) {
-            subtitleTextView.layout(l, subtitleTop, l + subtitleTextView.getMeasuredWidth(), subtitleTop + subtitleTextView.getTextHeight());
+            subtitleTextView.layout(subtitleL, subtitleTop, subtitleL + subtitleTextView.getMeasuredWidth(), subtitleTop + subtitleTextView.getTextHeight());
         } else if (animatedSubtitleTextView != null) {
             animatedSubtitleTextView.layout(l, subtitleTop, l + animatedSubtitleTextView.getMeasuredWidth(), subtitleTop + animatedSubtitleTextView.getTextHeight());
         }
@@ -940,6 +1023,19 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         setTitle(value, false, false, false, false, null, false);
     }
 
+    /** ButterGram: true if the chat shown in the header is one of ButterGram's official resources. */
+    private android.graphics.drawable.Drawable buttergramBadgeDrawable() {
+        if (parentFragment == null) {
+            return null;
+        }
+        TLRPC.User u = parentFragment.getCurrentUser();
+        if (u != null) {
+            return org.telegram.messenger.ButterGram.badgeFor(true, u.id);
+        }
+        TLRPC.Chat c = parentFragment.getCurrentChat();
+        return c != null ? org.telegram.messenger.ButterGram.badgeFor(false, c.id) : null;
+    }
+
     public void setTitle(CharSequence value, boolean scam, boolean fake, boolean verified, boolean premium, TLRPC.EmojiStatus emojiStatus, boolean animated) {
         if (value != null) {
             value = Emoji.replaceEmoji(value, titleTextView.getPaint().getFontMetricsInt(), false);
@@ -956,6 +1052,10 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                 rightDrawable2ContentDescription = getString(R.string.ScamMessage);
                 rightDrawableIsScamOrVerified = true;
             }
+        } else if (buttergramBadgeDrawable() != null) {
+            titleTextView.setRightDrawable2(buttergramBadgeDrawable());
+            rightDrawableIsScamOrVerified = true;
+            rightDrawable2ContentDescription = null;
         } else if (verified) {
             verifiedBackground = getResources().getDrawable(R.drawable.verified_area).mutate();
             ThemeBind.drawableColorFilter(this, verifiedBackground, Theme.key_profile_verifiedBackground, resourcesProvider, PorterDuff.Mode.MULTIPLY);

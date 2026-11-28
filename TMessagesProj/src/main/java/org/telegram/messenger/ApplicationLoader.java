@@ -194,6 +194,7 @@ public class ApplicationLoader extends Application {
         }
         applicationInited = true;
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
+        ButterGramPlugins.start();
 
         try {
             LocaleController.getInstance(); //TODO improve
@@ -300,6 +301,7 @@ public class ApplicationLoader extends Application {
         if (org.telegram.utils.twidget.WidgetEngineService.isEngineProcess()) {
             return;
         }
+        ButterGramSupporters.refreshAsync();
 
         // AndroidUtilities must be initialized before FileLog
         final String helloWorld = AndroidUtilities.getHelloWorld();

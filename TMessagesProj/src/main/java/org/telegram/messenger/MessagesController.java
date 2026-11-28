@@ -6832,6 +6832,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (user == null) {
             return false;
         }
+        ButterGram.applySupporter(user);
         fromCache = fromCache && user.id / 1000 != 333 && user.id != 777000;
         TLRPC.User oldUser = users.get(user.id);
         if (oldUser == user && !force) {
@@ -10553,7 +10554,7 @@ public class MessagesController extends BaseController implements NotificationCe
         checkReadTasks();
 
         if (getUserConfig().isClientActivated()) {
-            if (!ignoreSetOnline && getConnectionsManager().getPauseTime() == 0 && ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePausedStageQueue) {
+            if (!ignoreSetOnline && !org.telegram.utils.settings.SharedSettings.buttergramGhostOnline.get() && getConnectionsManager().getPauseTime() == 0 && ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePausedStageQueue) {
                 if (ApplicationLoader.mainInterfacePausedStageQueueTime != 0 && Math.abs(ApplicationLoader.mainInterfacePausedStageQueueTime - System.currentTimeMillis()) > 1000) {
                     if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || Math.abs(System.currentTimeMillis() - lastStatusUpdateTime) >= 55000 || offlineSent)) {
                         statusSettingState = 1;
@@ -11413,6 +11414,10 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public boolean sendTyping(long dialogId, long threadMsgId, int action, String emojicon, int classGuid) {
         if (action < 0 || action >= sendingTypings.length || dialogId == 0) {
+            return false;
+        }
+        if (org.telegram.utils.settings.SharedSettings.buttergramGhostTyping.get()) {
+            // ButterGram ghost mode: never show "typing…" / "recording…" to the other side
             return false;
         }
         final long selfId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
@@ -14593,6 +14598,10 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     private void completeReadTask(ReadTask task) {
+        if (org.telegram.utils.settings.SharedSettings.buttergramGhostRead.get()) {
+            // ButterGram ghost mode: do not tell the server that the history was read
+            return;
+        }
         if (task.replyId != 0 && task.monoForumPeerId == 0) {
             TLRPC.TL_messages_readDiscussion req = new TLRPC.TL_messages_readDiscussion();
             req.msg_id = (int) task.replyId;
@@ -18894,6 +18903,12 @@ public class MessagesController extends BaseController implements NotificationCe
                 dialogs_read_outbox_max.put(dialogId, Math.max(value, update.max_id));
             } else if (baseUpdate instanceof TL_update.TL_updateDeleteMessages) {
                 TL_update.TL_updateDeleteMessages update = (TL_update.TL_updateDeleteMessages) baseUpdate;
+                if (org.telegram.utils.settings.SharedSettings.buttergramSaveDeleted.get()) {
+                    // ButterGram: keep messages that were deleted remotely
+                    ButterGram.markDeleted(currentAccount, 0, update.messages);
+                    ButterGramChangeLog.logDeleted(getMessagesStorage(), currentAccount, 0, update.messages);
+                    continue;
+                }
                 if (deletedMessages == null) {
                     deletedMessages = new LongSparseArray<>();
                 }
@@ -19423,6 +19438,12 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d(baseUpdate + " channelId = " + update.channel_id);
                 }
+                if (org.telegram.utils.settings.SharedSettings.buttergramSaveDeleted.get()) {
+                    // ButterGram: keep messages that were deleted remotely
+                    ButterGram.markDeleted(currentAccount, update.channel_id, update.messages);
+                    ButterGramChangeLog.logDeleted(getMessagesStorage(), currentAccount, update.channel_id, update.messages);
+                    continue;
+                }
                 if (deletedMessages == null) {
                     deletedMessages = new LongSparseArray<>();
                 }
@@ -19553,6 +19574,19 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
 
                 MessageObject.getDialogId(message);
+
+                if (org.telegram.utils.settings.SharedSettings.buttergramEditHistory.get()) {
+                    // ButterGram: remember the text the message had before this edit
+                    try {
+                        TLRPC.Message previous = getMessagesStorage().getMessage(message.dialog_id, message.id);
+                        if (previous != null && previous.message != null && !previous.message.equals(message.message)) {
+                            ButterGram.saveEdit(currentAccount, ButterGram.channelIdOf(message), message.id, previous.edit_date != 0 ? previous.edit_date : previous.date, previous.message);
+                            ButterGramChangeLog.logEdit(currentAccount, message.dialog_id, message.id, previous.message, message.message);
+                        }
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                }
 
                 ConcurrentHashMap<Long, Integer> read_max = message.out ? dialogs_read_outbox_max : dialogs_read_inbox_max;
                 Integer value = read_max.get(message.dialog_id);

@@ -3726,6 +3726,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (messageObject == null) {
             return false;
         }
+        if (messageObject.isVoiceOnce() || messageObject.isRoundOnce()) {
+            ButterGramSecretSaver.watch(messageObject.currentAccount, messageObject);
+        }
         isSilent = silent;
         checkVolumeBarUI();
         if ((audioPlayer != null || videoPlayer != null) && isSamePlayingMessage(messageObject)) {

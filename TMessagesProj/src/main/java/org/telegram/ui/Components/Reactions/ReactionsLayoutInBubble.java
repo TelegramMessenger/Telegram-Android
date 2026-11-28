@@ -171,7 +171,7 @@ public class ReactionsLayoutInBubble {
         hasUnreadReactions = false;
         hasPaidReaction = false;
         reactionButtons.clear();
-        if (messageObject != null) {
+        if (messageObject != null && !org.telegram.messenger.ButterGram.hideReactions(messageObject)) {
             boolean forceLikeDislikeReactions = false; /*!messageObject.isOutOwner()
                     && !messageObject.isBotPendingDraft
                     && BotForumHelper.isBotForum(currentAccount, messageObject.getDialogId())

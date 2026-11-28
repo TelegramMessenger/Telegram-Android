@@ -9,6 +9,7 @@ import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Path;
 import android.graphics.Paint;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
@@ -135,6 +136,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
         for (Gift gift : gifts) {
             gift.emojiDrawable.addView(this);
+            if (gift.patternDrawable != null) gift.patternDrawable.addView(this);
         }
 
         update();
@@ -148,6 +150,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
         for (Gift gift : gifts) {
             gift.emojiDrawable.removeView(this);
+            if (gift.patternDrawable != null) gift.patternDrawable.removeView(this);
         }
     }
 
@@ -169,7 +172,21 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         public final String slug;
         private StarsReactionsSheet.Particles particles;
 
+        // ButterGram bubbles: pattern symbols, edge colour, cached shaders
+        public TLRPC.Document patternDocument;
+        public long patternDocId;
+        public int patternColor, edgeColor;
+        public AnimatedEmojiDrawable patternDrawable;
+        private RadialGradient glowShader, bubbleShader;
+        private Paint glowPaint, bubbleFill;
+        private final Matrix glowMatrix = new Matrix();
+        private android.graphics.PorterDuffColorFilter patternFilter;
+
         public int position = -1;
+
+        // ButterGram live bubbles: offset from the slot, velocity and the slot's last position
+        public float ox, oy, vx, vy, ax, ay, st, stv, sc = 1f;
+        public final float phase = (float) (Math.random() * Math.PI * 2);
 
         public Gift(TL_stars.TL_starGiftUnique gift) {
             id = gift.id;
@@ -177,6 +194,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             documentId = document == null ? 0 : document.id;
             final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
             color = backdrop.center_color | 0xFF000000;
+            edgeColor = backdrop.edge_color | 0xFF000000;
+            patternColor = backdrop.pattern_color | 0xFF000000;
+            final TL_stars.starGiftAttributePattern pat = findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class);
+            patternDocument = pat != null ? pat.document : null;
             slug = gift.slug;
             initParticles();
         }
@@ -186,6 +207,9 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             document = null;
             documentId = status.document_id;
             color = status.center_color | 0xFF000000;
+            edgeColor = status.edge_color | 0xFF000000;
+            patternColor = status.pattern_color | 0xFF000000;
+            patternDocId = status.pattern_document_id;
             slug = status.slug;
             initParticles();
         }
@@ -212,10 +236,88 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         public void copy(Gift b) {
             gradient = b.gradient;
             emojiDrawable = b.emojiDrawable;
+            patternDrawable = b.patternDrawable;
             gradientPaint = b.gradientPaint;
             animatedFloat = b.animatedFloat;
             particles = b.particles;
             position = b.position;
+            ox = b.ox;
+            oy = b.oy;
+            vx = b.vx;
+            vy = b.vy;
+            st = b.st;
+            stv = b.stv;
+            sc = b.sc;
+        }
+
+        // glass bubble: see-through body that is tinted towards the edge, the gift pattern inside, rim and highlights
+        private void drawBubble(Canvas canvas, float r, float alpha) {
+            if (bubbleShader == null) {
+                bubbleShader = new RadialGradient(0, 0, r,
+                        new int[]{Theme.multAlpha(color, 0.10f), Theme.multAlpha(color, 0.20f), Theme.multAlpha(edgeColor, 0.50f)},
+                        new float[]{0f, 0.62f, 1f}, Shader.TileMode.CLAMP);
+                bubbleFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+                bubbleFill.setShader(bubbleShader);
+            }
+            bubbleFill.setAlpha((int) (0xFF * alpha));
+            canvas.drawCircle(0, 0, r, bubbleFill);
+
+            if (patternDrawable != null) {
+                if (patternFilter == null) {
+                    patternFilter = new android.graphics.PorterDuffColorFilter(patternColor, android.graphics.PorterDuff.Mode.SRC_IN);
+                }
+                patternDrawable.setColorFilter(patternFilter);
+                patternDrawable.setAlpha((int) (0xFF * 0.42f * alpha));
+                final int ps = dp(7);
+                for (int k = 0; k < 6; k++) {
+                    final double a = Math.toRadians(k * 60 + 18);
+                    final int px = (int) (Math.cos(a) * r * 0.64f), py = (int) (Math.sin(a) * r * 0.64f);
+                    patternDrawable.setBounds(px - ps / 2, py - ps / 2, px + ps / 2, py + ps / 2);
+                    patternDrawable.draw(canvas);
+                }
+            }
+
+            bubblePaint.setStyle(Paint.Style.STROKE);
+            bubblePaint.setStrokeWidth(dp(1f));
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.38f * alpha));
+            canvas.drawCircle(0, 0, r - dp(0.5f), bubblePaint);
+            bubblePaint.setStrokeWidth(dp(2f));
+            bubblePaint.setColor(Theme.multAlpha(0xFF000000, 0.05f * alpha));
+            canvas.save();
+            canvas.clipRect(-r, r * 0.1f, r, r);
+            canvas.drawCircle(0, 0, r - dp(1.8f), bubblePaint);
+            canvas.restore();
+
+            bubblePaint.setStyle(Paint.Style.FILL);
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.3f * alpha));
+            bubbleRect.set(-r * 0.66f, -r * 0.74f, -r * 0.1f, -r * 0.46f);
+            canvas.save();
+            canvas.rotate(-30, -r * 0.38f, -r * 0.6f);
+            canvas.drawOval(bubbleRect, bubblePaint);
+            canvas.restore();
+            bubblePaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.28f * alpha));
+            canvas.drawCircle(r * 0.5f, r * 0.5f, dp(1.8f), bubblePaint);
+        }
+
+        // soft glow of the gift's colour on the rim of the avatar, on the side the bubble is
+        private void drawGlow(Canvas canvas, float px, float py, float cx, float cy, float rad, float strength) {
+            if (glowShader == null) {
+                glowShader = new RadialGradient(0, 0, dp(52),
+                        new int[]{Theme.multAlpha(color, 0.95f), Theme.multAlpha(color, 0.38f), 0},
+                        new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
+                glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                glowPaint.setShader(glowShader);
+            }
+            glowMatrix.setTranslate(px, py);
+            glowShader.setLocalMatrix(glowMatrix);
+            glowPaint.setAlpha((int) (0xFF * Math.min(1f, strength)));
+            glowPath.reset();
+            glowPath.addCircle(cx, cy, rad + dp(6), Path.Direction.CW);
+            glowPath.addCircle(cx, cy, rad - dp(4), Path.Direction.CCW);
+            canvas.save();
+            canvas.clipPath(glowPath);
+            canvas.drawCircle(px, py, dp(52), glowPaint);
+            canvas.restore();
         }
 
         public void draw(
@@ -226,7 +328,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 float gradientAlpha
         ) {
             if (alpha <= 0.0f) return;
-            final float gsz = dp(45);
+            final float gsz = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get() ? dp(40) : dp(45);
             bounds.set(cx - gsz / 2, cy - gsz / 2, cx + gsz / 2, cy + gsz / 2);
             canvas.save();
             canvas.translate(cx, cy);
@@ -235,12 +337,15 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             canvas.scale(scale, scale);
             particles.process();
             particles.draw(canvas, color, alpha);
-            if (gradientPaint != null) {
+            if (gradientPaint != null && !org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get()) {
                 gradientPaint.setAlpha((int) (0xFF * alpha * gradientAlpha));
                 canvas.drawRect(-gsz / 2.0f, -gsz / 2.0f, gsz / 2.0f, gsz / 2.0f, gradientPaint);
             }
+            if (org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get()) {
+                drawBubble(canvas, gsz * 0.5f, alpha);
+            }
             if (emojiDrawable != null) {
-                final int sz = dp(24);
+                final int sz = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get() ? dp(25) : dp(28);
                 emojiDrawable.setBounds(-sz / 2, -sz / 2, sz / 2, sz / 2);
                 emojiDrawable.setAlpha((int) (0xFF * alpha));
                 emojiDrawable.draw(canvas);
@@ -248,6 +353,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             canvas.restore();
         }
     }
+
+    private final Paint bubblePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF bubbleRect = new RectF();
+    private final Path glowPath = new Path();
 
     private StarsController.GiftsList list;
 
@@ -323,9 +432,15 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 } else {
                     g.emojiDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, g.documentId);
                 }
+                if (g.patternDocument != null) {
+                    g.patternDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, g.patternDocument);
+                } else if (g.patternDocId != 0) {
+                    g.patternDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, g.patternDocId);
+                }
                 g.animatedFloat = new AnimatedFloat(this, 0, 320, null);
                 g.animatedFloat.force(0.0f);
                 if (isAttachedToWindow()) {
+                    if (g.patternDrawable != null) g.patternDrawable.addView(this);
                     g.emojiDrawable.addView(this);
                 }
             }
@@ -348,6 +463,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             if (newGift == null) {
                 g.emojiDrawable.removeView(this);
                 g.emojiDrawable = null;
+                if (g.patternDrawable != null) {
+                    g.patternDrawable.removeView(this);
+                    g.patternDrawable = null;
+                }
                 g.gradient = null;
             } else {
                 positions.remove((Object) g.position);
@@ -387,6 +506,12 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         final float ah = Math.max(realH, sz);
 
 
+        final boolean live = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get();
+        final long nowMs = android.os.SystemClock.uptimeMillis();
+        final float dt = lastFrameMs == 0 ? 0.016f : Math.min(0.032f, (nowMs - lastFrameMs) / 1000f);
+        lastFrameMs = nowMs;
+        boolean animating = false;
+
         canvas.save();
         canvas.clipRect(0, 0, getWidth(), expandY);
 
@@ -399,6 +524,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         float expandScale = expandY / maxExpandY;
         float closedAlpha = Utilities.clamp01((expandY - (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight())) / dp(50));
 
+        if (live) buttergramCollide();
         for (int i = 0; i < gifts.size(); ++i) {
             final Gift gift = gifts.get(i);
             final float enter = gift.animatedFloat.set(1.0f);
@@ -407,6 +533,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
             float gx, gy;
             float delayValue;
+            final int bgPos = gift.position;
 
             switch (gift.position) {
                 case 0: // left
@@ -441,6 +568,15 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                     break;
             }
 
+            if (live && enter >= 1f) {
+                // the bubbles slowly orbit the avatar
+                final double th = (nowMs % 3600000L) / 1000.0 * 0.32;
+                final float rx = gx - acx, ry = gy - acy;
+                final float cs = (float) Math.cos(th), sn = (float) Math.sin(th);
+                gx = acx + rx * cs - ry * sn;
+                gy = acy + rx * sn + ry * cs;
+            }
+
             final float collapseProgressWithEnter;
             if (isOpening || enter >= 1f) {
                 collapseProgressWithEnter = collapseProgress;
@@ -461,10 +597,127 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 scale = AndroidUtilities.lerp(scale / 2f, scale, collapse);
             }
 
-            gift.draw(canvas, gx, gy, scale, 0, alpha, 1f);
+            float stretch = 0f, stretchAngle = 0f;
+            if (live && collapse >= 1f && enter >= 1f) {
+                gift.ax = gx;
+                gift.ay = gy;
+                if (gift != dragGift) {
+                    final float t = nowMs / 1000f;
+                    final float tx = (float) Math.sin(t * 0.9f + gift.phase) * dp(4);
+                    final float ty = (float) Math.cos(t * 0.7f + gift.phase * 1.3f) * dp(4);
+                    // underdamped spring towards a slowly wandering target: floaty and bouncy
+                    final float off = (float) Math.hypot(gift.ox, gift.oy);
+                    final float kk = off > dp(24) ? 16f : 50f, cc = off > dp(24) ? 3.4f : 6f;
+                    gift.vx += ((tx - gift.ox) * kk - gift.vx * cc) * dt;
+                    gift.vy += ((ty - gift.oy) * kk - gift.vy * cc) * dt;
+                    gift.ox += gift.vx * dt;
+                    gift.oy += gift.vy * dt;
+                    final float minX = dp(22), maxX = getWidth() - dp(22);
+                    final float minY = dp(22), maxY = Math.max(minY, getHeight() - dp(22));
+                    final float py0 = gy + gift.oy;
+                    if (py0 < minY) {
+                        gift.oy = minY - gy;
+                        gift.vy = Math.abs(gift.vy) * 0.6f;
+                    } else if (py0 > maxY) {
+                        gift.oy = maxY - gy;
+                        gift.vy = -Math.abs(gift.vy) * 0.6f;
+                    }
+                    final float px = gx + gift.ox;
+                    if (px < minX) {
+                        gift.ox = minX - gx;
+                        gift.vx = Math.abs(gift.vx) * 0.6f;
+                    } else if (px > maxX) {
+                        gift.ox = maxX - gx;
+                        gift.vx = -Math.abs(gift.vx) * 0.6f;
+                    }
+                }
+                gx += gift.ox;
+                gy += gift.oy;
+                animating = true;
+
+                // jelly: the bubble stretches along its motion and while it is pulled
+                final float sp = (float) Math.hypot(gift.vx, gift.vy);
+                final float offLen = (float) Math.hypot(gift.ox, gift.oy);
+                float target = Math.min(0.45f, sp / dp(1800f));
+                if (gift == dragGift) {
+                    target = Math.max(target, Math.min(0.6f, offLen / dp(220f)));
+                }
+                gift.stv += ((target - gift.st) * 130f - gift.stv * 7f) * dt;
+                gift.st += gift.stv * dt;
+                gift.st = Math.max(-0.2f, Math.min(0.65f, gift.st));
+                stretch = gift.st;
+                gift.sc += ((gift == dragGift ? 1.5f : 1f) - gift.sc) * Math.min(1f, dt * 10f);
+                final boolean byVelocity = sp > dp(40f);
+                stretchAngle = (float) Math.toDegrees(Math.atan2(byVelocity ? gift.vy : gift.oy, byVelocity ? gift.vx : gift.ox));
+
+                // colour of the background spills onto the avatar rim, stronger the closer the bubble is
+                final float rimR = Math.min(realW, realH) / 2f;
+                final float ddx = gx - realCX, ddy = gy - realCY;
+                final float dist = (float) Math.hypot(ddx, ddy);
+                if (dist > 1f) {
+                    final float near = Utilities.clamp01(1f - (dist - rimR) / dp(150f));
+                    if (near > 0.04f) {
+                        gift.drawGlow(canvas, realCX + ddx / dist * rimR, realCY + ddy / dist * rimR, realCX, realCY, rimR, near * alpha);
+                    }
+                }
+            }
+
+            if (Math.abs(stretch) > 0.01f) {
+                canvas.save();
+                canvas.rotate(stretchAngle, gx, gy);
+                canvas.scale(1f + stretch, (float) (1.0 / Math.sqrt(1f + stretch)), gx, gy);
+                canvas.rotate(-stretchAngle, gx, gy);
+                gift.draw(canvas, gx, gy, scale * gift.sc, 0, alpha, 1f);
+                canvas.restore();
+            } else {
+                gift.draw(canvas, gx, gy, scale * gift.sc, 0, alpha, 1f);
+            }
         }
 
         canvas.restore();
+        if (animating) {
+            postInvalidateOnAnimation();
+        }
+    }
+
+    private void buttergramCollide() {
+        final float min = dp(40);
+        for (int i = 0; i < gifts.size(); i++) {
+            final Gift a = gifts.get(i);
+            for (int j = i + 1; j < gifts.size(); j++) {
+                final Gift b = gifts.get(j);
+                float dx = (b.ax + b.ox) - (a.ax + a.ox), dy = (b.ay + b.oy) - (a.ay + a.oy);
+                float d = (float) Math.hypot(dx, dy);
+                if (d >= min) continue;
+                if (d < 0.01f) { dx = 1; dy = 0; d = 1; }
+                final float nx = dx / d, ny = dy / d, ov = min - d;
+                final boolean ad = a == dragGift, bd = b == dragGift;
+                final float wa = ad ? 0 : (bd ? 1 : 0.5f), wb = bd ? 0 : (ad ? 1 : 0.5f);
+                a.ox -= nx * ov * wa; a.oy -= ny * ov * wa;
+                b.ox += nx * ov * wb; b.oy += ny * ov * wb;
+                final float rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+                if (rv < 0) {
+                    final float imp = -rv * 0.9f;
+                    if (!ad) { a.vx -= nx * imp * wa * 2; a.vy -= ny * imp * wa * 2; }
+                    if (!bd) { b.vx += nx * imp * wb * 2; b.vy += ny * imp * wb * 2; }
+                }
+            }
+        }
+    }
+
+    private long lastFrameMs;
+    private Gift dragGift;
+    private boolean dragging;
+    private float downX, downY;
+    private long lastMoveTime;
+
+    /** ButterGram: true when a visible bubble is under the point (lets the profile route the touch here even over other views). */
+    public boolean isGiftAt(float x, float y) {
+        if (!active || gifts.isEmpty() || getVisibility() != VISIBLE || getAlpha() < 0.5f
+                || expandProgress > 0.01f || collapseProgress < 1f || actionBarProgress > 0.01f) {
+            return false;
+        }
+        return getGiftUnder(x, y) != null;
     }
 
     public Gift getGiftUnder(float x, float y) {
@@ -480,28 +733,78 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (!active) return false;
+        final boolean live = org.telegram.utils.settings.SharedSettings.buttergramLiveBubbles.get();
+        final int action = event.getAction();
         final Gift hit = getGiftUnder(event.getX(), event.getY());
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+        boolean handled;
+        if (action == MotionEvent.ACTION_DOWN) {
             pressedGift = hit;
+            dragging = false;
+            downX = event.getX();
+            downY = event.getY();
+            lastMoveTime = event.getEventTime();
             if (pressedGift != null) {
                 pressedGift.bounce.setPressed(true);
+                if (live && getParent() != null) {
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                }
             }
-        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            return pressedGift != null;
+        } else if (action == MotionEvent.ACTION_MOVE) {
+            if (live && pressedGift != null) {
+                final float slop = android.view.ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                if (!dragging && Math.hypot(event.getX() - downX, event.getY() - downY) > slop) {
+                    dragging = true;
+                    dragGift = pressedGift;
+                    pressedGift.bounce.setPressed(false);
+                }
+                if (dragging) {
+                    final Gift g = dragGift;
+                    final float fx = Math.max(dp(22), Math.min(getWidth() - dp(22), event.getX()));
+                    final float fy = Math.max(dp(22), Math.min(Math.max(dp(22), getHeight() - dp(22)), event.getY()));
+                    float nx = fx - g.ax, ny = fy - g.ay;
+                    final float d = (event.getEventTime() - lastMoveTime) / 1000f;
+                    if (d > 0.001f) {
+                        g.vx = 0.5f * g.vx + 0.5f * (nx - g.ox) / d;
+                        g.vy = 0.5f * g.vy + 0.5f * (ny - g.oy) / d;
+                    }
+                    lastMoveTime = event.getEventTime();
+                    g.ox = nx;
+                    g.oy = ny;
+                    invalidate();
+                }
+                return true;
+            }
             if (pressedGift != hit && pressedGift != null) {
                 pressedGift.bounce.setPressed(false);
                 pressedGift = null;
             }
-        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            return pressedGift != null;
+        } else if (action == MotionEvent.ACTION_UP) {
+            handled = pressedGift != null;
+            if (dragging && dragGift != null) {
+                final float maxV = dp(2200);
+                dragGift.vx = Math.max(-maxV, Math.min(maxV, dragGift.vx));
+                dragGift.vy = Math.max(-maxV, Math.min(maxV, dragGift.vy));
+                dragGift = null;
+                dragging = false;
+                pressedGift = null;
+                invalidate();
+                return true;
+            }
             if (pressedGift != null) {
                 onGiftClick(pressedGift);
                 pressedGift.bounce.setPressed(false);
                 pressedGift = null;
             }
-        } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+            return handled;
+        } else if (action == MotionEvent.ACTION_CANCEL) {
             if (pressedGift != null) {
                 pressedGift.bounce.setPressed(false);
                 pressedGift = null;
             }
+            dragGift = null;
+            dragging = false;
         }
         return pressedGift != null;
     }

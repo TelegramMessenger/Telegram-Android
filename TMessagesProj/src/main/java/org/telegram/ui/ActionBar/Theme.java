@@ -4536,7 +4536,7 @@ public class Theme {
     }
 
     public static boolean canStartHolidayAnimation() {
-        return canStartHolidayAnimation;
+        return canStartHolidayAnimation || org.telegram.utils.settings.SharedSettings.buttergramForceSnow.get();
     }
 
     public static int getEventType() {

@@ -2786,7 +2786,12 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
         });
-        messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
+        if (isChat && org.telegram.utils.settings.SharedSettings.buttergramIosInput.get()) {
+            // ButterGram: iOS-style input, the emoji/sticker button sits on the right
+            messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 2, 0));
+        } else {
+            messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
+        }
         setEmojiButtonImage(false, false);
 
         deleteRichDraftButton = new ImageView(context);
@@ -2871,7 +2876,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             ThemeBind.colorFilter(attachButton, Theme.key_glass_defaultIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             attachButton.setImageResource(R.drawable.msg_input_attach2);
             ThemeBind.selectorBackground(attachButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
-            messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
+            messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, org.telegram.utils.settings.SharedSettings.buttergramIosInput.get() ? Gravity.BOTTOM | Gravity.LEFT : Gravity.BOTTOM | Gravity.RIGHT));
             attachButton.setOnClickListener(v -> {
                 if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress() || attachLayoutPaddingAlpha == 0f) {
                     return;
@@ -7407,6 +7412,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                     emojiView.hideSearchKeyboard();
                 }
             }
+            if (allowConfirmFinal && buttergramConfirmBeforeSend(() -> sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, true))) {
+                return;
+            }
             if (allowConfirmFinal && showConfirmAlert(() -> {
                 sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, false);
             })) {
@@ -7563,6 +7571,60 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     protected boolean showConfirmAlert(Runnable onConfirmed) {
         return false;
+    }
+
+    private boolean buttergramConfirmed;
+
+    /** ButterGram: shows "send anyway?" and returns true if the dialog was shown (the caller must stop). */
+    private boolean buttergramShowSendDialog(int messageRes, Runnable onConfirmed) {
+        if (messageRes == 0 || parentActivity == null) {
+            return false;
+        }
+        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(parentActivity, resourcesProvider);
+        builder.setTitle(LocaleController.getString(R.string.ButterGramConfirmTitle));
+        builder.setMessage(LocaleController.getString(messageRes));
+        builder.setPositiveButton(LocaleController.getString(R.string.Send), (dialog, which) -> onConfirmed.run());
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        builder.show();
+        return true;
+    }
+
+    /** Text with offensive words, a voice message or a round video that is about to be sent from the preview. */
+    private boolean buttergramConfirmBeforeSend(Runnable resend) {
+        if (buttergramConfirmed) {
+            buttergramConfirmed = false;
+            return false;
+        }
+        int res = 0;
+        if (videoToSendMessageObject != null) {
+            if (org.telegram.utils.settings.SharedSettings.buttergramConfirmRound.get()) {
+                res = R.string.ButterGramConfirmRound;
+            }
+        } else if (audioToSend != null) {
+            if (org.telegram.utils.settings.SharedSettings.buttergramConfirmVoice.get()) {
+                res = R.string.ButterGramConfirmVoice;
+            }
+        } else if (org.telegram.utils.settings.SharedSettings.buttergramWarnOffensive.get()
+                && messageEditText != null
+                && org.telegram.messenger.ButterGram.looksOffensive(messageEditText.getText())) {
+            res = R.string.ButterGramOffensiveWarning;
+        }
+        return buttergramShowSendDialog(res, () -> {
+            buttergramConfirmed = true;
+            resend.run();
+        });
+    }
+
+    /** Sticker: ask first when the setting is on, otherwise continue as usual. */
+    private boolean buttergramConfirmSticker(Runnable send) {
+        if (!org.telegram.utils.settings.SharedSettings.buttergramConfirmSticker.get()) {
+            return false;
+        }
+        return buttergramShowSendDialog(R.string.ButterGramConfirmSticker, () -> {
+            if (!showConfirmAlert(send)) {
+                send.run();
+            }
+        });
     }
 
     public static boolean checkPremiumAnimatedEmoji(int currentAccount, long dialogId, BaseFragment parentFragment, FrameLayout container, CharSequence message) {
@@ -7993,7 +8055,21 @@ public class ChatActivityEnterView extends FrameLayout implements
                     setWebPage(null, true);
                     parentFragment.fallbackFieldPanel();
                 }
-                SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+                if (start == 0 && end == text.length() && scheduleDate == 0 && parentFragment != null && !delegate.hasForwardingMessages() && org.telegram.messenger.ButterGram.undoSendSeconds() > 0) {
+                    final CharSequence restoreText = new android.text.SpannableStringBuilder(text);
+                    final SendMessagesHelper.SendMessageParams delayedParams = params;
+                    final int delayedAccount = currentAccount;
+                    org.telegram.messenger.ButterGram.sendWithUndo(parentFragment,
+                        () -> SendMessagesHelper.getInstance(delayedAccount).sendMessage(delayedParams),
+                        () -> {
+                            setFieldText(restoreText);
+                            if (messageEditText != null) {
+                                messageEditText.requestFocus();
+                            }
+                        });
+                } else {
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+                }
                 start = end + 1;
             } while (end != text.length());
             return true;
@@ -12525,7 +12601,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                                 delegate.onMessageSend(null, notify, scheduleDate, 0, 0);
                             }
                         };
-                        if (!showConfirmAlert(runnable)) {
+                        if (!buttergramConfirmSticker(runnable) && !showConfirmAlert(runnable)) {
                             runnable.run();
                         }
                     });
@@ -12799,7 +12875,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                     }
                     MediaDataController.getInstance(currentAccount).addRecentSticker(MediaDataController.TYPE_IMAGE, parent, sticker, (int) (System.currentTimeMillis() / 1000), false);
                 };
-                if (!showConfirmAlert(runnable)) {
+                if (!buttergramConfirmSticker(runnable) && !showConfirmAlert(runnable)) {
                     runnable.run();
                 }
             });

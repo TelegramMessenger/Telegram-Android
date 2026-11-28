@@ -681,6 +681,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private StaticLayout mentionLayout;
 
     private boolean drawVerified;
+    private android.graphics.drawable.Drawable buttergramBadge;
     private boolean drawBotVerified;
     private boolean drawPremium;
     private final View emojiStatusView;
@@ -743,7 +744,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         Theme.createDialogsResources(context);
         drawMonoforumAvatar = false;
         drawCommunityAvatar = false;
-        avatarImage.setRoundRadius(dp(26));
+        avatarImage.setRoundRadius(org.telegram.messenger.ButterGram.avatarRadius(dp(26)));
         for (int i = 0; i < thumbImage.length; ++i) {
             thumbImage[i] = new ImageReceiver(this);
             thumbImage[i].ignoreNotifications = true;
@@ -1337,6 +1338,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         drawNameLock = false;
         drawVerified = false;
+        buttergramBadge = null;
         drawBotVerified = false;
         drawPremium = false;
         drawForwardIcon = false;
@@ -1538,7 +1540,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             emojiStatus.set(DialogObject.getEmojiStatusDocumentId(chat.emoji_status), false);
                             emojiStatus.setParticles(DialogObject.isEmojiStatusCollectible(chat.emoji_status), false);
                         } else {
-                            drawVerified = !forbidVerified && chat.verified;
+                            buttergramBadge = org.telegram.messenger.ButterGram.badgeFor(false, chat.id);
+                            drawVerified = !forbidVerified && (chat.verified || buttergramBadge != null);
                             drawBotVerified = !forbidVerified && chat.bot_verification_icon != 0;
                         }
                     } else if (user != null) {
@@ -1550,7 +1553,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             drawScam = 2;
                             Theme.dialogs_fakeDrawable.checkText();
                         } else {
-                            drawVerified = !forbidVerified && user.verified;
+                            buttergramBadge = org.telegram.messenger.ButterGram.badgeFor(true, user.id);
+                            drawVerified = !forbidVerified && (user.verified || buttergramBadge != null);
                             drawBotVerified = !forbidVerified && !UserObject.isUserSelf(user) && user.bot_verification_icon != 0;
                         }
                         drawPremium = MessagesController.getInstance(currentAccount).isPremiumUser(user) && UserConfig.getInstance(currentAccount).clientUserId != user.id && user.id != 0;
@@ -3303,7 +3307,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             drawMonoforumAvatar = false;
             drawCommunityAvatar = false;
-            avatarImage.setRoundRadius(dp(26));
+            avatarImage.setRoundRadius(org.telegram.messenger.ButterGram.avatarRadius(dp(26)));
             drawUnmute = false;
         } else {
             int oldUnreadCount = unreadCount;
@@ -3758,7 +3762,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 avatarRadius = dp(28);
             }
 
-            avatarImage.setRoundRadius(avatarRadius);
+            avatarImage.setRoundRadius(org.telegram.messenger.ButterGram.avatarRadius(avatarRadius));
         }
         if (!isTopic && (getMeasuredWidth() != 0 || getMeasuredHeight() != 0)) {
             rebuildLayout = true;
@@ -4548,10 +4552,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {
                     y -= dp(9);
                 }
+                if (buttergramBadge != null) {
+                    setDrawableBounds(buttergramBadge, nameMuteLeft - dp(1), y - dp(1));
+                    buttergramBadge.draw(canvas);
+                } else {
                 setDrawableBounds(Theme.dialogs_verifiedDrawable, nameMuteLeft - dp(1), y);
                 setDrawableBounds(Theme.dialogs_verifiedCheckDrawable, nameMuteLeft - dp(1), y);
                 Theme.dialogs_verifiedDrawable.draw(canvas);
                 Theme.dialogs_verifiedCheckDrawable.draw(canvas);
+                }
             } else if (drawPremium) {
                 int y = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 15.5f);
                 if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {

@@ -4439,6 +4439,19 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     }
 
     public void sendMessage(SendMessageParams sendMessageParams) {
+        if (sendMessageParams.message != null && sendMessageParams.photo == null && sendMessageParams.document == null
+                && sendMessageParams.location == null && sendMessageParams.poll == null && sendMessageParams.game == null
+                && sendMessageParams.retryMessageObject == null && sendMessageParams.sendingStory == null) {
+            // ButterGram add-ons: commands and outgoing text hooks
+            String replaced = ButterGramPlugins.outgoing(sendMessageParams.message, sendMessageParams.peer);
+            if (replaced == null) {
+                return;
+            }
+            if (!replaced.equals(sendMessageParams.message)) {
+                sendMessageParams.message = replaced;
+                sendMessageParams.entities = null;
+            }
+        }
         final SendMessageChatArguments sendMessageChatArguments = sendMessageParams.sendMessageChatArguments != null ?
                 sendMessageParams.sendMessageChatArguments : SendMessageChatArguments.EMPTY;
         String message = sendMessageParams.message;

@@ -304,7 +304,19 @@ public class ProfileActionsView extends View {
                 action.rect.height() / 2.0f * (1.0f - action.getScale())
             );
             if (glassFactory != null) {
-                drawGlass(canvas, AndroidUtilities.rectTmp, r, action.getAlpha() * alphaFraction1);
+                // ButterGram: round glass button with the caption below it
+                final float d = buttergramCircle(action, AndroidUtilities.rectTmp.width(), AndroidUtilities.rectTmp.height());
+                final float ccx = AndroidUtilities.rectTmp.centerX();
+                final float ctop = AndroidUtilities.rectTmp.top + dp(1);
+                AndroidUtilities.rectTmp.set(ccx - d / 2f, ctop, ccx + d / 2f, ctop + d);
+                final float ga = action.getAlpha() * alphaFraction1;
+                buttergramPaint.setStyle(android.graphics.Paint.Style.FILL);
+                buttergramPaint.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(0xFFFFFFFF, (int) (0xFF * 0.17f * ga)));
+                canvas.drawCircle(ccx, ctop + d / 2f, d / 2f, buttergramPaint);
+                buttergramPaint.setStyle(android.graphics.Paint.Style.STROKE);
+                buttergramPaint.setStrokeWidth(dp(0.7f));
+                buttergramPaint.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(0xFFFFFFFF, (int) (0xFF * 0.22f * ga)));
+                canvas.drawCircle(ccx, ctop + d / 2f, d / 2f - dp(0.35f), buttergramPaint);
                 continue;
             }
             int wasAlpha = paint.getAlpha();
@@ -344,6 +356,12 @@ public class ProfileActionsView extends View {
         }
     }
 
+    private final android.graphics.Paint buttergramPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+
+    private float buttergramCircle(Action action, float w, float h) {
+        return Math.max(dp(30), Math.min(Math.min(w, dp(46)), h - dp(15)));
+    }
+
     private void updateBounds(Action action) {
         final float cx = action.rect.centerX();
         final float cy = action.rect.centerY();
@@ -353,7 +371,10 @@ public class ProfileActionsView extends View {
 
         action.text.setMaxWidth(action.rect.width() - dp(2));
         action.textScale = action.text.getLineCount() >= 3 ? 0.75f : action.text.getLineCount() >= 2 ? 0.85f : 1.0f;
-        final float drawableTop = Math.max(0, (targetHeight - action.text.getHeight() * action.textScale) / 3f + dpf2(1.33f));
+        final float circleD = buttergramCircle(action, action.rect.width(), action.rect.height());
+        final float drawableTop = glassFactory != null
+                ? action.rect.top + dp(1) + circleD / 2f - drawableR
+                : Math.max(0, (targetHeight - action.text.getHeight() * action.textScale) / 3f + dpf2(1.33f));
         action.setBounds(
             (int) (cx - drawableR),
             (int) (drawableTop),
@@ -386,11 +407,17 @@ public class ProfileActionsView extends View {
         final float cy = action.rect.centerY();
         fraction *= action.getScale();
         canvas.scale(fraction, fraction, cx, cy);
-        canvas.clipRect(action.rect);
+        if (glassFactory != null) {
+            canvas.clipRect(action.rect.left - dp(8), action.rect.top - dp(2), action.rect.right + dp(8), action.rect.bottom + dp(4));
+        } else {
+            canvas.clipRect(action.rect);
+        }
 
         updateBounds(action);
 
-        final float textY = action.bounds.bottom + action.bounds.top - action.text.getHeight() * action.textScale / 2.0f - dp(4.66f);
+        final float textY = glassFactory != null
+                ? action.rect.top + dp(1) + buttergramCircle(action, action.rect.width(), action.rect.height()) + dp(2)
+                : action.bounds.bottom + action.bounds.top - action.text.getHeight() * action.textScale / 2.0f - dp(4.66f);
         canvas.save();
         canvas.scale(action.textScale, action.textScale, cx, textY + action.text.getHeight() * action.textScale / 2.0f);
         action.text.draw(canvas, cx - action.text.getWidth() / 2f, textY, textColor, alpha);
@@ -986,7 +1013,8 @@ public class ProfileActionsView extends View {
         }
 
         public void setText(CharSequence cs) {
-            this.text = new Text(cs, 11, AndroidUtilities.bold())
+            final boolean bg = glassFactory != null;
+            this.text = new Text(bg ? cs.toString().toLowerCase() : cs, 11, bg ? android.graphics.Typeface.DEFAULT : AndroidUtilities.bold())
                 .multiline(3)
                 .align(Layout.Alignment.ALIGN_CENTER);
         }

@@ -4781,6 +4781,18 @@ public class LocaleController {
 
     @Nullable
     private String getStringV2(String key, @StringRes int stringRes, String fallback) {
+        String value = getStringV2Raw(key, stringRes, fallback);
+        // ButterGram: server translations still say "Telegram" for the app name
+        if (value != null && value.contains("Telegram")
+                && (stringRes == R.string.AppName || stringRes == R.string.Page1Title || stringRes == R.string.TelegramVersion
+                || "AppName".equals(key) || "Page1Title".equals(key) || "TelegramVersion".equals(key))) {
+            value = value.replace("Telegram", "ButterGram");
+        }
+        return value;
+    }
+
+    @Nullable
+    private String getStringV2Raw(String key, @StringRes int stringRes, String fallback) {
         final Context context = ApplicationLoader.applicationContext;
         String value;
 

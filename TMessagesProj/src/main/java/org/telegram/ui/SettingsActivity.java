@@ -530,7 +530,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         titleView.setText(UserObject.getUserName(user));
         final StringBuilder sb = new StringBuilder();
         if (user != null) {
-            sb.append(PhoneFormat.getInstance().format("+" + user.phone));
+            sb.append(org.telegram.messenger.ButterGram.maskPhone(PhoneFormat.getInstance().format("+" + user.phone)));
         }
         final String username = UserObject.getPublicUsername(user);
         if (username != null) {
@@ -788,6 +788,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asShadow(null));
         }
 
+        items.add(SettingCell.Factory.of(28, 0xFFE3B948, 0xFFCFA33A, R.drawable.settings_buttergram, getString(R.string.ButterGramSettings)));
+        items.add(UItem.asShadow(null));
+
         final boolean walletAbove = getConnectionsManager().getCurrentTime() - 1791538462 < 4 * 7 * 24 * 60 * 60;
         if (walletAbove && getMessagesController().config.walletAvailable.get()) {
             final GramWallet wallet = GramWallet.getInstance(currentAccount);
@@ -812,10 +815,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asShadow(null));
         }
 
-        if (!getMessagesController().premiumFeaturesBlocked()) {
+        if (!getMessagesController().premiumFeaturesBlocked() && !org.telegram.utils.settings.SharedSettings.buttergramHidePremiumRows.get()) {
             items.add(SettingCell.Factory.of(11, 0xFFB659FF, 0xFF617CFF, R.drawable.settings_premium, getString(R.string.TelegramPremium)));
         }
-        if (getMessagesController().starsPurchaseAvailable()) {
+        if (getMessagesController().starsPurchaseAvailable() && !org.telegram.utils.settings.SharedSettings.buttergramHidePremiumRows.get()) {
             StarsController c = StarsController.getInstance(currentAccount);
             long balance = c.getBalance().amount;
             items.add(SettingCell.Factory.of(12, 0xFFEFA612, 0xFFE77512, R.drawable.settings_stars, getString(R.string.TelegramStars), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
@@ -827,10 +830,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(SettingCell.Factory.of(13, 0xFF1BA4ED, 0xFF1488E1, R.drawable.filled_gram_earnings, getString(R.string.GramEarnings), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
         }
 
-        if (!getMessagesController().premiumFeaturesBlocked()) {
+        if (!getMessagesController().premiumFeaturesBlocked() && !org.telegram.utils.settings.SharedSettings.buttergramHidePremiumRows.get()) {
             items.add(SettingCell.Factory.of(15, 0xFFF45255, 0xFFDF3955, R.drawable.settings_business, getString(R.string.TelegramBusiness)));
         }
-        if (!getMessagesController().premiumPurchaseBlocked()) {
+        if (!getMessagesController().premiumPurchaseBlocked() && !org.telegram.utils.settings.SharedSettings.buttergramHidePremiumRows.get()) {
             items.add(SettingCell.Factory.of(16, 0xFFF38B31, 0xFFE26314, R.drawable.settings_gift, getString(R.string.SendAGift)));
         }
         if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW)
@@ -1003,6 +1006,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 presentFragment(new HeaderSettingsActivity());
                 break;
             }
+            case 28: {
+                presentSettingFragment(new ButterGramSettingsActivity());
+                break;
+            }
         }
     }
 
@@ -1056,7 +1063,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     }
                     break;
             }
-            return formatString(R.string.TelegramVersion, String.format(Locale.US, "v%s (%d)\n%s", pInfo.versionName, code, abi));
+            return formatString(R.string.TelegramVersion, String.format(Locale.US, "v%s (%d) \u2022 %s\n%s", pInfo.versionName, code, org.telegram.messenger.ButterGram.MOD_VERSION, abi));
         } catch (Exception e) {
             FileLog.e(e);
         }

@@ -240,7 +240,8 @@ public class Switch extends View implements Theme.Colorable {
 
     private void animateToCheckedState(boolean newCheckedState) {
         checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
-        checkAnimator.setDuration(200);
+        checkAnimator.setDuration(320);
+        checkAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         checkAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {

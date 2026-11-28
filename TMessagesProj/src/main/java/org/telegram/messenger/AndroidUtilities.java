@@ -4287,6 +4287,10 @@ public class AndroidUtilities {
             f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToMessage(message.messageOwner);
         }
         if (f != null && f.exists()) {
+            if (parentFragment != null && f.getName().toLowerCase().endsWith(ButterGramPlugins.EXTENSION)) {
+                ButterGramPlugins.showInstallDialog(parentFragment, f, message);
+                return;
+            }
             if (parentFragment != null && f.getName().toLowerCase().endsWith("attheme")) {
                 Theme.ThemeInfo themeInfo = Theme.applyThemeFile(f, message.getDocumentName(), null, true);
                 if (themeInfo != null) {
@@ -4420,6 +4424,14 @@ public class AndroidUtilities {
             f = FileLoader.getInstance(message.currentAccount).getPathToMessage(message.messageOwner);
         }
         String mimeType = message.type == MessageObject.TYPE_FILE || message.type == MessageObject.TYPE_TEXT ? message.getMimeType() : null;
+        String buttergramName = message.getFileName();
+        if (f != null && f.exists() && buttergramName != null && buttergramName.toLowerCase().endsWith(ButterGramPlugins.EXTENSION)) {
+            org.telegram.ui.ActionBar.BaseFragment buttergramFragment = org.telegram.ui.LaunchActivity.getSafeLastFragment();
+            if (buttergramFragment != null) {
+                ButterGramPlugins.showInstallDialog(buttergramFragment, f, message);
+                return true;
+            }
+        }
         return openForView(f, message.getFileName(), mimeType, activity, resourcesProvider, restrict);
     }
 
@@ -6729,7 +6741,7 @@ public class AndroidUtilities {
                     }
                     break;
             }
-            return formatString("TelegramVersion", R.string.TelegramVersion, String.format(Locale.US, "v%s (%d) %s", pInfo.versionName, code, abi));
+            return formatString("TelegramVersion", R.string.TelegramVersion, String.format(Locale.US, "v%s (%d) \u2022 %s %s", pInfo.versionName, code, ButterGram.MOD_VERSION, abi));
         } catch (Exception e) {
             FileLog.e(e);
         }

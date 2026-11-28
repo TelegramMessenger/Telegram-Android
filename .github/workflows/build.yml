@@ -1,0 +1,84 @@
+name: Build ButterGram APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set own Telegram API credentials
+        env:
+          API_ID: ${{ secrets.TG_API_ID }}
+          API_HASH: ${{ secrets.TG_API_HASH }}
+        run: |
+          if ! [[ "$API_ID" =~ ^[0-9]+$ ]] || ! [[ "$API_HASH" =~ ^[0-9a-f]{32}$ ]]; then
+            echo "::error::Add repository secrets TG_API_ID (number) and TG_API_HASH (32 hex chars) from my.telegram.org"
+            exit 1
+          fi
+          F=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          sed -i "s/public static int APP_ID = [0-9]*;/public static int APP_ID = ${API_ID};/" "$F"
+          sed -i "s/public static String APP_HASH = \"[0-9a-f]*\";/public static String APP_HASH = \"${API_HASH}\";/" "$F"
+          grep -c "APP_ID = ${API_ID};" "$F"
+
+      - name: Install Android SDK components
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon :TMessagesProj_AppStandalone:assembleAfatStandalone --console=plain 2>&1 | tee build.log
+
+      - name: Show the real build errors
+        if: failure()
+        run: |
+          {
+            echo "## Build errors"
+            echo '```'
+            grep -nE "error:|^e: |What went wrong|Execution failed|FAILED|Error: " build.log | grep -v "at org.gradle" | head -60
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Name the APK
+        run: |
+          APK=$(find TMessagesProj_AppStandalone/build/outputs/apk -name '*.apk' | head -n 1)
+          mkdir -p dist
+          cp "$APK" dist/ButterGram_LiteV.apk
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ButterGram_LiteV
+          path: dist/ButterGram_LiteV.apk
+          compression-level: 0
+          if-no-files-found: error
+
+      # A release gives a direct APK link (no zip wrapper). It must never fail the build, the artifact above is the fallback.
+      - name: Publish the APK as a pre-release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "lite-${{ github.run_number }}" "dist/ButterGram_LiteV.apk" \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease \
+            --title "ButterGram Lite #${{ github.run_number }}" --notes "Lite build: without plugins."

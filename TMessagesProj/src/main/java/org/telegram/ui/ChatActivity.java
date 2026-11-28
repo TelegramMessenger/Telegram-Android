@@ -484,6 +484,93 @@ public class ChatActivity extends BaseFragment implements
     private ThanosEffect chatListThanosEffect;
     private ChatListViewPaddingsAnimator chatListViewPaddingsAnimator;
     private ChatListRecyclerView chatListView;
+    private org.telegram.ui.Components.ButterGramBackBadge buttergramBackBadge;
+    private boolean buttergramKeyboardWasOpen;
+
+    private void buttergramUpdateBadge() {
+        if (buttergramBackBadge == null) {
+            return;
+        }
+        if (!org.telegram.utils.settings.SharedSettings.buttergramBackBadge.get() || inPreviewMode) {
+            buttergramBackBadge.setCount(0);
+            return;
+        }
+        int count = getMessagesStorage().getMainUnreadCount();
+        TLRPC.Dialog current = getMessagesController().dialogs_dict.get(dialog_id);
+        if (current != null && current.unread_count > 0) {
+            count--;
+        }
+        buttergramBackBadge.setCount(count);
+        buttergramLayoutBadge(count);
+    }
+
+    /** The badge sits inside a widened back pill, centered on the arrow row. */
+    private void buttergramLayoutBadge(int count) {
+        if (buttergramBackBadge == null || actionBar == null) {
+            return;
+        }
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) buttergramBackBadge.getLayoutParams();
+        int top = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + (ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(18)) / 2;
+        int extra = count > 0 ? buttergramBackBadge.getBadgeWidth() + AndroidUtilities.dp(6) : 0;
+        if (lp != null && (lp.topMargin != top || lp.leftMargin != AndroidUtilities.dp(38))) {
+            lp.topMargin = top;
+            lp.leftMargin = AndroidUtilities.dp(38);
+            buttergramBackBadge.setLayoutParams(lp);
+        }
+        if (actionBar.buttergramBackExtra != extra) {
+            actionBar.buttergramBackExtra = extra;
+            actionBar.requestLayout();
+            actionBar.invalidate();
+        }
+    }
+
+    private static final int BUTTERGRAM_AVATAR_ITEM = 7777;
+    private ActionBarMenuItem buttergramAvatarItem;
+    private BackupImageView buttergramAvatarView;
+
+    /** iOS-style header: the chat avatar sits in the right pill, the title is centered in its own pill. */
+    private long buttergramAvatarKey;
+
+    private void buttergramRefreshRightAvatar(boolean reload) {
+        if (actionBar == null || avatarContainer == null || isReport() || startLoadFromDate != 0) {
+            return;
+        }
+        boolean enabled = org.telegram.utils.settings.SharedSettings.buttergramChatCenterTitle.get() && !inPreviewMode;
+        if (!enabled) {
+            if (buttergramAvatarItem != null) {
+                buttergramAvatarItem.setVisibility(View.GONE);
+            }
+            return;
+        }
+        ActionBarMenu menu = actionBar.createMenu();
+        if (buttergramAvatarItem == null) {
+            buttergramAvatarItem = menu.addItemWithWidth(BUTTERGRAM_AVATAR_ITEM, 0, AndroidUtilities.dp(46));
+            buttergramAvatarView = new BackupImageView(getParentActivity() != null ? getParentActivity() : buttergramAvatarItem.getContext());
+            buttergramAvatarView.setRoundRadius(AndroidUtilities.dp(18));
+            buttergramAvatarItem.addView(buttergramAvatarView, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
+        }
+        buttergramAvatarItem.setVisibility(View.VISIBLE);
+        // keep it the right-most item
+        if (menu.indexOfChild(buttergramAvatarItem) != menu.getChildCount() - 1) {
+            menu.removeView(buttergramAvatarItem);
+            menu.addView(buttergramAvatarItem);
+            actionBar.checkMenuItemsWidth();
+        }
+        TLObject object = currentUser != null ? currentUser : currentChat;
+        long key = currentUser != null ? currentUser.id : currentChat != null ? -currentChat.id : 0;
+        if (object != null && (reload || key != buttergramAvatarKey)) {
+            buttergramAvatarKey = key;
+            AvatarDrawable drawable = new AvatarDrawable();
+            drawable.setInfo(currentAccount, object);
+            if (currentUser != null && UserObject.isUserSelf(currentUser)) {
+                drawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+                buttergramAvatarView.setForUserOrChat(null, drawable);
+            } else {
+                buttergramAvatarView.setForUserOrChat(object, drawable);
+            }
+        }
+    }
+    private final org.telegram.ui.Components.ButterGramScreenshot buttergramScreenshot = new org.telegram.ui.Components.ButterGramScreenshot();
     private ChatListItemAnimator chatListItemAnimator;
     private GridLayoutManagerFixed chatLayoutManager;
     private ChatActivityAdapter chatAdapter;
@@ -1265,6 +1352,7 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_ADD_STICKER_TO_FAVORITES = 20;
     public final static int OPTION_DELETE_STICKER_FROM_FAVORITES = 21;
     public final static int OPTION_COPY_LINK = 22;
+    public final static int OPTION_BUTTERGRAM_EDITS = 5001;
     public final static int OPTION_REPORT_CHAT = 23;
     public final static int OPTION_CANCEL_SENDING = 24;
     public final static int OPTION_UNVOTE = 25;
@@ -1707,6 +1795,10 @@ public class ChatActivity extends BaseFragment implements
     private final static int view_as_topics = 59;
 
     private final static int search = 40;
+    private final static int buttergram_lock = 9301;
+    private android.widget.FrameLayout buttergramLockOverlay;
+    private ActionBarMenuItem.Item buttergramLockItem;
+    private boolean buttergramLockAuthRunning;
 
     private final static int topic_close = 60;
     private final static int open_forum = 61;
@@ -3710,6 +3802,9 @@ public class ChatActivity extends BaseFragment implements
         } else {
             actionBar.setBackButtonDrawable(new BackDrawable(isReport()));
         }
+        buttergramBackBadge = new org.telegram.ui.Components.ButterGramBackBadge(context);
+        actionBar.addView(buttergramBackBadge, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.LEFT | Gravity.TOP, 30, (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight / AndroidUtilities.density : 0) + 7, 0, 0));
+        buttergramUpdateBadge();
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -3717,6 +3812,10 @@ public class ChatActivity extends BaseFragment implements
                 // the chat's menu is also opened from the sidebar: what it does is in the chat
                 if (id != chat_menu_options && id != chat_menu_topics_panel && id != -1 && topicsPanel != null && topicsPanel.isOpen()) {
                     topicsPanel.close();
+                }
+                if (id == BUTTERGRAM_AVATAR_ITEM) {
+                    avatarContainer.openProfile(true);
+                    return;
                 }
                 if (id == -1) {
                     if (isInPollAddOptionMode()) {
@@ -3988,6 +4087,8 @@ public class ChatActivity extends BaseFragment implements
                     getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of("/help", dialog_id, null, null, null, false, null, null, null, true, 0, 0, null, false));
                 } else if (id == bot_settings) {
                     getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of("/settings", dialog_id, null, null, null, false, null, null, null, true, 0, 0, null, false));
+                } else if (id == buttergram_lock) {
+                    buttergramToggleLock();
                 } else if (id == search) {
                     openSearchWithText(isSupportedTags() ? "" : null);
                 } else if (id == translate) {
@@ -4398,6 +4499,8 @@ public class ChatActivity extends BaseFragment implements
             if (searchItem != null) {
                 headerItem.lazilyAddSubItem(search, R.drawable.msg_search, LocaleController.getString(R.string.Search));
             }
+            buttergramLockItem = headerItem.lazilyAddSubItem(buttergram_lock, R.drawable.msg_secret, LocaleController.getString(
+                    org.telegram.messenger.ButterGramChatLock.isLocked(dialog_id) ? R.string.ButterGramChatUnlockMenu : R.string.ButterGramChatLockMenu));
             if (ChatObject.isBoostSupported(currentChat) && (getUserConfig().isPremium() || ChatObject.isBoosted(chatInfo) || ChatObject.hasAdminRights(currentChat))) {
                 RLottieDrawable drawable = new RLottieDrawable(R.raw.boosts, dp(24), dp(24));
                 headerItem.lazilyAddSubItem(boost_group, drawable, LocaleController.getString(ChatObject.isChannelAndNotMegaGroup(currentChat) ? R.string.BoostingBoostChannelMenu : R.string.BoostingBoostGroupMenu));
@@ -5137,7 +5240,7 @@ public class ChatActivity extends BaseFragment implements
                             fragment.setDelegate(ChatActivity.this);
                             presentFragment(fragment);
                         } else {
-                            showFieldPanelForReply(getSlidingMessageObject());
+                            buttergramSwipeAction(getSlidingMessageObject());
                         }
                     }
                     endTrackingX = slidingViewGetOffsetX();
@@ -7392,7 +7495,7 @@ public class ChatActivity extends BaseFragment implements
                 } else {
                     String username = ChatObject.getPublicUsername(chat);
                     if (username != null) {
-                        chatActivityEnterView.replaceWithText(start, len, "@" + username + " ", false);
+                        chatActivityEnterView.replaceWithText(start, len, "@" + username + (org.telegram.utils.settings.SharedSettings.buttergramMentionComma.get() ? ", " : " "), false);
                     }
                 }
             } else if (object instanceof TLRPC.User) {
@@ -7401,10 +7504,10 @@ public class ChatActivity extends BaseFragment implements
                     searchUserMessages(user, null);
                 } else {
                     if (UserObject.getPublicUsername(user) != null) {
-                        chatActivityEnterView.replaceWithText(start, len, "@" + UserObject.getPublicUsername(user) + " ", false);
+                        chatActivityEnterView.replaceWithText(start, len, "@" + UserObject.getPublicUsername(user) + (org.telegram.utils.settings.SharedSettings.buttergramMentionComma.get() ? ", " : " "), false);
                     } else {
                         String name = UserObject.getFirstName(user, false);
-                        Spannable spannable = new SpannableString(name + " ");
+                        Spannable spannable = new SpannableString(name + (org.telegram.utils.settings.SharedSettings.buttergramMentionComma.get() ? ", " : " "));
                         spannable.setSpan(new URLSpanUserMention("" + user.id, 3), 0, spannable.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         chatActivityEnterView.replaceWithText(start, len, spannable, false);
                     }
@@ -7498,6 +7601,11 @@ public class ChatActivity extends BaseFragment implements
             } else if (object instanceof MediaDataController.KeywordResult) {
                 String code = ((MediaDataController.KeywordResult) object).emoji;
                 chatActivityEnterView.addEmojiToRecent(code);
+                // ButterGram: what a tap on an emoji suggestion does (0 replace, 1 insert after, 2 insert after with a space)
+                final int suggestMode = org.telegram.utils.settings.SharedSettings.buttergramEmojiSuggestMode.get();
+                final int insStart = suggestMode == 0 ? start : start + len;
+                final int insLen = suggestMode == 0 ? len : 0;
+                final String insPrefix = suggestMode == 2 ? " " : "";
                 if (code != null && code.startsWith("animated_")) {
                     try {
                         Paint.FontMetricsInt fontMetrics = null;
@@ -7516,12 +7624,12 @@ public class ChatActivity extends BaseFragment implements
                             span = new AnimatedEmojiSpan(documentId, fontMetrics);
                         }
                         emoji.setSpan(span, 0, emoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        chatActivityEnterView.replaceWithText(start, len, emoji, false);
+                        chatActivityEnterView.replaceWithText(insStart, insLen, insPrefix.isEmpty() ? emoji : new android.text.SpannableStringBuilder(insPrefix).append(emoji), false);
                     } catch (Exception ignore) {
-                        chatActivityEnterView.replaceWithText(start, len, code, true);
+                        chatActivityEnterView.replaceWithText(insStart, insLen, insPrefix + code, true);
                     }
                 } else {
-                    chatActivityEnterView.replaceWithText(start, len, code, true);
+                    chatActivityEnterView.replaceWithText(insStart, insLen, insPrefix + code, true);
                 }
                 mentionContainer.updateVisibility(false);
             }
@@ -22742,6 +22850,8 @@ public class ChatActivity extends BaseFragment implements
                 chatActivityEnterView.updateSendButtonPaid();
             }
         } else if (id == NotificationCenter.updateInterfaces) {
+            buttergramUpdateBadge();
+            buttergramRefreshRightAvatar(((Integer) args[0] & MessagesController.UPDATE_MASK_AVATAR) != 0);
             int updateMask = (Integer) args[0];
             if ((updateMask & MessagesController.UPDATE_MASK_NAME) != 0 || (updateMask & MessagesController.UPDATE_MASK_CHAT_NAME) != 0 || (updateMask & MessagesController.UPDATE_MASK_EMOJI_STATUS) != 0) {
                 if (currentChat != null) {
@@ -30656,9 +30766,102 @@ public class ChatActivity extends BaseFragment implements
 
     Bulletin.Delegate bulletinDelegate;
 
+    private void buttergramToggleLock() {
+        final boolean now = !org.telegram.messenger.ButterGramChatLock.isLocked(dialog_id);
+        if (now && !org.telegram.messenger.ButterGramChatLock.canAuthenticate(getParentActivity())) {
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.ButterGramChatLockNoSecurity)).show();
+            return;
+        }
+        org.telegram.messenger.ButterGramChatLock.setLocked(dialog_id, now);
+        if (now) {
+            org.telegram.messenger.ButterGramChatLock.markOpen(dialog_id);
+        }
+        if (buttergramLockItem != null) {
+            buttergramLockItem.setText(LocaleController.getString(now ? R.string.ButterGramChatUnlockMenu : R.string.ButterGramChatLockMenu));
+        }
+        BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString(now ? R.string.ButterGramChatLockedToast : R.string.ButterGramChatUnlockedToast)).show();
+    }
+
+    private void buttergramCheckLock() {
+        if (!org.telegram.messenger.ButterGramChatLock.needsAuth(dialog_id)) {
+            org.telegram.messenger.ButterGramChatLock.markOpen(dialog_id);
+            return;
+        }
+        if (getParentActivity() == null || !(fragmentView instanceof android.view.ViewGroup)) {
+            return;
+        }
+        if (buttergramLockOverlay == null) {
+            final Context context = getParentActivity();
+            final android.widget.FrameLayout overlay = new android.widget.FrameLayout(context);
+            overlay.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            overlay.setClickable(true);
+            final android.widget.LinearLayout box = new android.widget.LinearLayout(context);
+            box.setOrientation(android.widget.LinearLayout.VERTICAL);
+            box.setGravity(android.view.Gravity.CENTER);
+            final android.widget.ImageView icon = new android.widget.ImageView(context);
+            icon.setImageResource(R.drawable.msg_secret);
+            icon.setColorFilter(new android.graphics.PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteGrayIcon), android.graphics.PorterDuff.Mode.SRC_IN));
+            box.addView(icon, LayoutHelper.createLinear(56, 56, android.view.Gravity.CENTER_HORIZONTAL));
+            final android.widget.TextView text = new android.widget.TextView(context);
+            text.setText(LocaleController.getString(R.string.ButterGramChatLockedTitle));
+            text.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 18);
+            text.setTypeface(AndroidUtilities.bold());
+            text.setGravity(android.view.Gravity.CENTER);
+            box.addView(text, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, android.view.Gravity.CENTER_HORIZONTAL, 0, 14, 0, 0));
+            final android.widget.TextView unlock = new android.widget.TextView(context);
+            unlock.setText(LocaleController.getString(R.string.ButterGramChatUnlockButton));
+            unlock.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+            unlock.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 15);
+            unlock.setTypeface(AndroidUtilities.bold());
+            unlock.setGravity(android.view.Gravity.CENTER);
+            unlock.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(22), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
+            unlock.setOnClickListener(v -> buttergramAskUnlock());
+            box.addView(unlock, LayoutHelper.createLinear(200, 44, android.view.Gravity.CENTER_HORIZONTAL, 0, 22, 0, 0));
+            final android.widget.TextView close = new android.widget.TextView(context);
+            close.setText(LocaleController.getString(R.string.Close));
+            close.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
+            close.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 15);
+            close.setGravity(android.view.Gravity.CENTER);
+            close.setOnClickListener(v -> finishFragment());
+            box.addView(close, LayoutHelper.createLinear(200, 44, android.view.Gravity.CENTER_HORIZONTAL, 0, 6, 0, 0));
+            overlay.addView(box, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, android.view.Gravity.CENTER));
+            buttergramLockOverlay = overlay;
+            ((android.view.ViewGroup) fragmentView).addView(overlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
+        buttergramLockOverlay.setVisibility(View.VISIBLE);
+        buttergramAskUnlock();
+    }
+
+    private void buttergramAskUnlock() {
+        if (buttergramLockAuthRunning || getParentActivity() == null) {
+            return;
+        }
+        buttergramLockAuthRunning = true;
+        org.telegram.messenger.ButterGramChatLock.authenticate(getParentActivity(), LocaleController.getString(R.string.ButterGramChatLockedTitle), () -> {
+            buttergramLockAuthRunning = false;
+            org.telegram.messenger.ButterGramChatLock.markOpen(dialog_id);
+            if (buttergramLockOverlay != null) {
+                buttergramLockOverlay.setVisibility(View.GONE);
+            }
+        }, () -> buttergramLockAuthRunning = false);
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        buttergramCheckLock();
+        buttergramScreenshot.start(this);
+        buttergramUpdateBadge();
+        buttergramRefreshRightAvatar(false);
+        if (buttergramKeyboardWasOpen && org.telegram.utils.settings.SharedSettings.buttergramRememberKeyboard.get()) {
+            buttergramKeyboardWasOpen = false;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (chatActivityEnterView != null && getParentActivity() != null) {
+                    chatActivityEnterView.openKeyboard();
+                }
+            }, 150);
+        }
         checkShowBlur(false);
         activityResumeTime = System.currentTimeMillis();
         if (openImport && getSendMessagesHelper().getImportingHistory(dialog_id) != null) {
@@ -30875,6 +31078,9 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onPause() {
         super.onPause();
+        org.telegram.messenger.ButterGramChatLock.markClosed(dialog_id);
+        buttergramScreenshot.stop();
+        buttergramKeyboardWasOpen = chatActivityEnterView != null && chatActivityEnterView.isKeyboardVisible();
         scrolling = false;
         if (scrimPopupWindow != null) {
             scrimPopupWindow.setPauseNotifications(false);
@@ -31957,6 +32163,7 @@ public class ChatActivity extends BaseFragment implements
                 icons.add(R.drawable.msg_calendar2);
             }
 
+            org.telegram.messenger.ButterGram.filterMenu(items, options, icons);
             if (options.isEmpty() && optionsView == null) {
                 return false;
             }
@@ -34287,6 +34494,61 @@ public class ChatActivity extends BaseFragment implements
         MediaController.saveFile(path, getParentActivity(), messageObject.isVideo() ? 1 : 0, null, null);
     }
 
+    /** ButterGram: earlier versions of an edited message, newest first. */
+    private void showButterGramEdits(MessageObject message) {
+        if (message == null || getParentActivity() == null) {
+            return;
+        }
+        java.util.List<Object[]> edits = org.telegram.messenger.ButterGram.getEdits(message);
+        if (edits.isEmpty()) {
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = edits.size() - 1; i >= 0; i--) {
+            Object[] entry = edits.get(i);
+            long date = ((Integer) entry[0]).longValue();
+            if (sb.length() > 0) {
+                sb.append("\n\n");
+            }
+            sb.append(LocaleController.formatSmallDateChat(date)).append(", ").append(org.telegram.messenger.ButterGram.formatTime(date)).append('\n');
+            sb.append((String) entry[1]);
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), themeDelegate);
+        builder.setTitle(LocaleController.getString(R.string.ButterGramEditHistory));
+        builder.setMessage(sb.toString());
+        builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
+        showDialog(builder.create());
+    }
+
+    /** ButterGram: what a swipe on a message does (reply by default). */
+    private void buttergramSwipeAction(MessageObject message) {
+        if (message == null) {
+            return;
+        }
+        switch (org.telegram.utils.settings.SharedSettings.buttergramSwipeAction.get()) {
+            case 1:
+                selectedObject = message;
+                processSelectedOption(OPTION_FORWARD);
+                break;
+            case 2: {
+                CharSequence text = message.messageText;
+                if (message.caption != null) {
+                    text = message.caption;
+                }
+                if (text != null && text.length() > 0) {
+                    AndroidUtilities.addToClipboard(text);
+                    BulletinFactory.of(this).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+                }
+                break;
+            }
+            case 3:
+                break;
+            default:
+                showFieldPanelForReply(message);
+                break;
+        }
+    }
+
     private void processSelectedOption(int option) {
         if (selectedObject == null || getParentActivity() == null) {
             return;
@@ -34962,6 +35224,10 @@ public class ChatActivity extends BaseFragment implements
             }
             case OPTION_DELETE_STICKER_FROM_FAVORITES: {
                 getMediaDataController().addRecentSticker(MediaDataController.TYPE_FAVE, selectedObject, selectedObject.getDocument(), (int) (System.currentTimeMillis() / 1000), true);
+                break;
+            }
+            case OPTION_BUTTERGRAM_EDITS: {
+                showButterGramEdits(selectedObject);
                 break;
             }
             case OPTION_COPY_LINK: {
@@ -46700,6 +46966,11 @@ public class ChatActivity extends BaseFragment implements
                     items.add(LocaleController.getString(R.string.CopyLink));
                     options.add(OPTION_COPY_LINK);
                     icons.add(R.drawable.msg_link);
+                }
+                if (selectedObject != null && !org.telegram.messenger.ButterGram.getEdits(selectedObject).isEmpty()) {
+                    items.add(LocaleController.getString(R.string.ButterGramEditHistory));
+                    options.add(OPTION_BUTTERGRAM_EDITS);
+                    icons.add(R.drawable.msg_recent);
                 }
                 if (selectedObject != null && selectedObject.messageOwner != null && selectedObject.messageOwner.action == null && currentChat != null && currentChat.forum && !isTopic && selectedObject.messageOwner != null && selectedObject.messageOwner.reply_to != null && selectedObject.messageOwner.reply_to.forum_topic) {
                     items.add(LocaleController.getString(R.string.ViewInTopic));

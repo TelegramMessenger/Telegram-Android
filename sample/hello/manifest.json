@@ -1,0 +1,10 @@
+{
+  "id": "hello",
+  "name": "Hello",
+  "version": "1.0",
+  "author": "xenone-beta",
+  "description": "Sample add-on: .hello command, shout mode and a notice on every .ping.",
+  "icon": "\ud83d\udc4b",
+  "main": "main.py",
+  "permissions": ["send_messages", "read_messages"]
+}

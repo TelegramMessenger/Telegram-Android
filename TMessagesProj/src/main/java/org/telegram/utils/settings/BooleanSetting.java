@@ -61,4 +61,13 @@ public final class BooleanSetting {
         loaded = true;
         SettingsPreferences.get().edit().putBoolean(name, value).apply();
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public synchronized void reset() {
+        SettingsPreferences.get().edit().remove(name).apply();
+        loaded = false;
+    }
 }

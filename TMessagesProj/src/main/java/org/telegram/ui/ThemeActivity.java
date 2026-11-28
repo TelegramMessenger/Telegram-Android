@@ -307,7 +307,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         private SeekBarView sizeBar;
         private TextCheckCell compactModeCell;
         private int startFontSize = 12;
-        private int endFontSize = 30;
+        private int endFontSize = org.telegram.utils.settings.SharedSettings.buttergramBigFont.get() ? 50 : 30;
 
         private TextPaint textPaint;
         private int lastWidth;
